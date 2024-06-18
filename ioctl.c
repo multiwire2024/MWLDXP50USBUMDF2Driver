@@ -2,7 +2,9 @@
 #include "private.h"
 #include "Trace.h"
 #include "ioctl.tmh"
+#define _DEBUG
 #include <malloc.h>
+#include <crtdbg.h>
 
 VOID
 MWLDXP50USBUMDF2DriverEvtIoDeviceControl(
