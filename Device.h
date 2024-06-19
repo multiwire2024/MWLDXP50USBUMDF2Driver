@@ -19,31 +19,19 @@ Environment:
 EXTERN_C_START
 
 typedef struct _DEVICE_CONTEXT {
-
     USB_DEVICE_DESCRIPTOR           UsbDeviceDescriptor;
-
     PUSB_CONFIGURATION_DESCRIPTOR   UsbConfigurationDescriptor;
-
     WDFUSBDEVICE                    WdfUsbTargetDevice;
-
+    WDFWAITLOCK                     ResetDeviceWaitLock;
     ULONG                           WaitWakeEnable;
-
     BOOLEAN                         IsDeviceHighSpeed;
-
     BOOLEAN                         IsDeviceSuperSpeed;
-
     WDFUSBINTERFACE                 UsbInterface;
-
     UCHAR                           SelectedAlternateSetting;
-
     UCHAR                           NumberConfiguredPipes;
-
     ULONG                           MaximumTransferSize;
-
     BOOLEAN                         IsStaticStreamsSupported;
-
     USHORT                          NumberOfStreamsSupportedByController;
-
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext)

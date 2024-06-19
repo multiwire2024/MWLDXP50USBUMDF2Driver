@@ -703,9 +703,6 @@ RetrieveDeviceInformation(
     MWLUsb_DbgPrint(3, ("IsDeviceSelfPowered: %s\n",
         (info.Traits & WDF_USB_DEVICE_TRAIT_SELF_POWERED) ? "TRUE" : "FALSE"));
 
-    pDeviceContext->WaitWakeEnable =
-                        info.Traits & WDF_USB_DEVICE_TRAIT_REMOTE_WAKE_CAPABLE;
-
     MWLUsb_DbgPrint(3, ("IsDeviceRemoteWakeable: %s\n",
         (info.Traits & WDF_USB_DEVICE_TRAIT_REMOTE_WAKE_CAPABLE) ? "TRUE" : "FALSE"));
 
