@@ -1,10 +1,9 @@
 
 #include "private.h"
+#include "device.h"
 #include "Trace.h"
 #include "ioctl.tmh"
-#define _DEBUG
 #include <malloc.h>
-#include <crtdbg.h>
 
 VOID
 MWLDXP50USBUMDF2DriverEvtIoDeviceControl(
@@ -46,14 +45,16 @@ Return Value:
     size_t            bufLength;
     NTSTATUS           status = STATUS_INVALID_DEVICE_REQUEST;
    
-   // PFILE_CONTEXT      pFileContext;
+   
     ULONG              length = 0;
 
     UNREFERENCED_PARAMETER(OutputBufferLength);
     UNREFERENCED_PARAMETER(InputBufferLength);
 
-    DoTraceMessage(MWLUSBDRIVER_ALL_INFO, "Entered MWLUsb_DispatchDevCtrl control code = %x\n", IoControlCode);
+    DoTraceMessage(MWLDXP50USBUMDF2Driver_ALL_INFO, "Entered MWLUsb_DispatchDevCtrl control code = %x\n", IoControlCode);
     MWLUsb_DbgPrint(1, ("Entered MWLUsb_DispatchDevCtrl control code = %x\n", IoControlCode));
+
+    free(malloc(64));
 
 #ifdef WDF_KERNEL_MODE
     //
@@ -94,19 +95,8 @@ Return Value:
         break;
 
     case IOCTL_MWLUSB_RESET_PIPE:
-        PVOID inBuffer = NULL;
-        size_t inLength = 0;
 
         MWLUsb_DbgPrint(1, ("MWLUsb Reset Pipe\n"));
-        status = WdfRequestRetrieveInputBuffer(Request, length, &inBuffer, &inLength);
-        if (!NT_SUCCESS(status)) {
-            MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
-            break;
-        }
-
-        status = MWLDXP50USBDriver_ResetPipe(device, Request, (ULONG*)inBuffer);
-        length = 0;
-        MWLUsb_DbgPrint(1, ("Reset pipenum %d, status = %x\n", pipe_num, status ));
 
         break;
 
@@ -198,48 +188,58 @@ Return Value:
 
    case IOCTL_EZUSB_GET_CURRENT_FRAME_NUMBER:
    {
-
         MWLUsb_DbgPrint(1, ("Ezusb Get Current Frame\n"));
-        status = WdfRequestRetrieveOutputBuffer(Request, length, &outBuffer, &outLength);
-        if (!NT_SUCCESS(status)) {
-            MWLUsb_DbgPrint(1, ("Reset Pipe: WdfRequestRetrieveInputBuffer failed\n"));
-	    length = 0;
-            break;
-        }
-	status = WdfUsbTargetDeviceRetrieveCurrentFrameNumber(device, (ULONG*)outBuffer);
-        if (!NT_SUCCESS(status)) {
-            MWLUsb_DbgPrint(1, ("Reset Pipe: WdfUsbTargetDeviceRetrieveCurrentFrameNumber failed status = 0x%x\n", status));
-	    length = 0;
-            break;
-        }
-        length = sizeof(ULONG);
+#if 0
+       ULONG frameNumber = 0;
+
+       //
+       // make sure the output buffer is valid
+       //
+       if (outputBufferLength < sizeof(ULONG))
+       {
+           Irp->IoStatus.Status = STATUS_INVALID_PARAMETER;
+           break;
+       }
+
+       frameNumber = Ezusb_GetCurrentFrameNumber(fdo);
+
+       if (frameNumber)
+       {
+           *((PULONG)ioBuffer) = frameNumber;
+           Irp->IoStatus.Information = sizeof(ULONG);
+           Irp->IoStatus.Status = STATUS_SUCCESS;
+       }
+       else
+           Irp->IoStatus.Status = STATUS_UNSUCCESSFUL;
+       }
+#endif
    }
    break;
 
    case IOCTL_EZUSB_RESETPIPE:
    {
-        MWLUsb_DbgPrint(1, ("Ezusb Reset Pipe\n"));
-        status = WdfRequestRetrieveInputBuffer(Request, length, &inBuffer, &inLength);
-        if (!NT_SUCCESS(status)) {
-            MWLUsb_DbgPrint(1, ("Reset Pipe: WdfRequestRetrieveInputBuffer failed\n"));
-            break;
-        }
-        status = MWLDXP50USBDriver_ResetPipe(device, Request, (ULONG*)inBuffer);
-        length = 0;
+     // ULONG pipenum = *((PULONG) ioBuffer);
+
+      MWLUsb_DbgPrint(1, ("Ezusb Reset Pipe\n"));
+#if 0
+      status = Ezusb_ResetPipe(device,pipenum);
+#endif
    }
 
    break;
 
    case IOCTL_EZUSB_ABORTPIPE:
    {
-        MWLUsb_DbgPrint(1, ("Ezusb Abort Pipe\n"));
-        status = WdfRequestRetrieveInputBuffer(Request, length, &inBuffer, &inLength);
-        if (!NT_SUCCESS(status)) {
-            MWLUsb_DbgPrint(1, ("Reset Pipe: WdfRequestRetrieveInputBuffer failed\n"));
-            break;
-        }
-        status = MWLDXP50USBDriver_ResetPipe(device, Request, (ULONG*)inBuffer);
-        length = 0;
+       MWLUsb_DbgPrint(1, ("Ezusb Abort Pipe\n"));
+#if 0
+      int pipenum = *((PULONG) ioBuffer);
+
+      Ezusb_AbortPipe(device,
+                     (USBD_PIPE_HANDLE) pdx->Interface->Pipes[pipenum].PipeHandle);
+
+      length = 0;
+      status = STATUS_SUCCESS;
+#endif
    }
    
    break;
@@ -279,7 +279,7 @@ Return Value:
       //           in the Irp, which will then cause the system to copy the buffer back
       //           to the user's buffer
       //
-
+       free(malloc(64));
       if (pDevContext) {
   
           length = pDevContext->UsbDeviceDescriptor.bLength;
@@ -298,7 +298,7 @@ Return Value:
       else {
           status = STATUS_INVALID_DEVICE_STATE;
       }
-
+      free(malloc(64));
       MWLUsb_DbgPrint(1, ("Get Device Descriptor returned %d bytes\n", length));
 
       break;
@@ -314,7 +314,7 @@ Return Value:
        size_t inBufLength = 0; 
        WDF_USB_CONTROL_SETUP_PACKET cntl = { 0 };
        WDF_MEMORY_DESCRIPTOR mem = { 0 };
-
+       free(malloc(64));
        status = WdfRequestRetrieveOutputBuffer(Request, sizeof(USB_STRING_DESCRIPTOR), &outputBuffer, &outBufLength);
        if (!NT_SUCCESS(status)) {
            MWLUsb_DbgPrint(1, ("GET_STRING_DESC: WdfRequestRetrieveOutputBuffer failed\n"));
@@ -361,7 +361,7 @@ Return Value:
        length = (ULONG)((transfer_bytes >= outBufLength) ? outBufLength : transfer_bytes);
 
        RtlCopyMemory((BYTE*)outputBuffer, transfer_buffer, length );
-
+       free(malloc(64));
        PUSB_STRING_DESCRIPTOR rtn_desc = (PUSB_STRING_DESCRIPTOR)transfer_buffer;
        UNREFERENCED_PARAMETER(rtn_desc);
        MWLUsb_DbgPrint(1, ("GET_STRING_DESC: WdUsbTargetDeviceSendControlTransferSynchronously returns bDescriptorType = %x bLength = %x\n", rtn_desc->bDescriptorType, rtn_desc->bLength));
@@ -421,12 +421,10 @@ Return Value:
  
     case IOCTL_EZUSB_RESET:
         MWLUsb_DbgPrint(1, ("Ezusb Reset\n"));
-        status = MWLUSBDXP50USBUMDF2Driver_ResetDevice(device);
-        if (!NT_SUCCESS(status)) {
-            MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
-        }
-	length = 0;
-        break;
+#if 0
+      Ezusb_ResetParentPort(device);
+#endif
+      break;
 
     case IOCTL_EZUSB_BULK_WRITE:
     {
@@ -443,7 +441,7 @@ Return Value:
         PVOID outBuffer = NULL;
         size_t outLength = 0;
         size_t inLength = 0;
-
+        free(malloc(64));
         status = WdfRequestRetrieveInputBuffer(Request, length, &inBuffer, &inLength);
         if (!NT_SUCCESS(status)) {
             MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
@@ -479,8 +477,8 @@ Return Value:
                 MWLUsb_DbgPrint(1, ("%x ", ((BYTE*)outBuffer)[i]));
                 i++;
             }
-
         }
+
         MWLUsb_DbgPrint(1, ("\n"));
         if ((WdfUsbPipeTypeBulk == pipeInfo.PipeType) ||
             (WdfUsbPipeTypeInterrupt == pipeInfo.PipeType)) {
@@ -505,12 +503,12 @@ Return Value:
     {
        
         //
-        // Get the pipe associate with this request.
+        // Get the pipe associated with this request.
         //
         MWLUsb_DbgPrint(1, ("Ezusb Bulk Read\n"));
-        // Get the pipe associate with this request.
-  //
-        MWLUsb_DbgPrint(1, ("Ezusb Bulk Write\n"));
+       
+        free(malloc(64));
+       
         PVOID inBuffer = NULL;
         PVOID outBuffer = NULL;
         size_t outLength = 0;
@@ -546,50 +544,66 @@ Return Value:
         if ((WdfUsbPipeTypeBulk == pipeInfo.PipeType) ||
             (WdfUsbPipeTypeInterrupt == pipeInfo.PipeType)) {
 
+
 #ifdef WDF_KERNEL_MODE
             BYTE* transfer_buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, outLength, 'MWLU');
 #else
-            BYTE* transfer_buffer = malloc(outLength);
+            BYTE* transfer_buffer = malloc(0x10000); // max transfer for usb 2
+            ULONG packet_size     = pipeInfo.MaximumPacketSize;
+            BYTE* packet_buffer   = malloc(0x10000); // needs to be the maxpacket size from the endpoint desc
 #endif
-
             WDF_MEMORY_DESCRIPTOR buffer_desc = { 0 };
             buffer_desc.Type = WdfMemoryDescriptorTypeBuffer;
-            buffer_desc.u.BufferType.Buffer = transfer_buffer;
-            buffer_desc.u.BufferType.Length = (ULONG)outLength;
-            status = WdfUsbTargetPipeReadSynchronously(pipe, Request, (PWDF_REQUEST_SEND_OPTIONS)NULL, &buffer_desc, &length);
+            buffer_desc.u.BufferType.Buffer = packet_buffer;
+            buffer_desc.u.BufferType.Length = packet_size;
+            
+            ULONG to_go = (ULONG)outLength;
+            ULONG transfer_length = 0;
+            length = 0;
+            
+            do {
+                free(malloc(64));
+                transfer_length = 0;
+                status = WdfUsbTargetPipeReadSynchronously(pipe, Request, (PWDF_REQUEST_SEND_OPTIONS)NULL, &buffer_desc, &transfer_length);
+                if (!NT_SUCCESS(status)) {
+                    break;
+                }
+                RtlCopyMemory(transfer_buffer + length, packet_buffer, transfer_length);
+                length += transfer_length;
+                to_go -= transfer_length;
+                free(malloc(64));
+                MWLUsb_DbgPrint(1, (" synchronous read returned transfer_length = %d, length = %d status = %x\n", transfer_length, length, status));
+            } while (transfer_length == packet_size && NT_SUCCESS(status));
+
             if (!NT_SUCCESS(status)) {
                 MWLUsb_DbgPrint(1, (" synchronous read failed request status = %x\n", status));
+                if (length > 0) {
+                    MWLUsb_DbgPrint(1, ("Ezusb bulk read received %d bytes max buffer = %d bytes\n", length, outLength));
+                    RtlCopyMemory(outBuffer, transfer_buffer, length > outLength ? outLength : length);
+                }
+                free(malloc(64));
 #ifdef WDF_KERNEL_MODE
                 ExFreePoolWithTag(transfer_buffer, 'MWLU');
 #else
                 free(transfer_buffer);
-#endif
-               
-#if 0
-                if (copyMdl != NULL) {
-                    IoFreeMdl(copyMdl);
-
-                    
-                }
+                free(packet_buffer);
 #endif
                 break;
             }
             MWLUsb_DbgPrint(1, ("Ezusb bulk read received %d bytes max buffer = %d bytes\n", length, outLength ));
 
-
-            RtlCopyMemory(outBuffer, transfer_buffer, length);
+            RtlCopyMemory(outBuffer, transfer_buffer, length > outLength? outLength : length);
 #ifdef WDF_KERNEL_MODE
             ExFreePoolWithTag(transfer_buffer, 'MWLU');
 #else
             free(transfer_buffer);
+            free(packet_buffer);
 #endif
+            MWLUsb_DbgPrint(1, ("Bulk Read returned %d bytes\n", length));
         }
         else {
             status = STATUS_INVALID_DEVICE_STATE;
         }
-        
-        MWLUsb_DbgPrint(1, ("Bulk Read returned %d bytes\n", length));
-        
     }
     break;
 
@@ -643,28 +657,85 @@ Return Value:
 
       case IOCTL_EZUSB_ISO_READ:
       case IOCTL_EZUSB_ISO_WRITE:
-        MWLUsb_DbgPrint(1, ("Ezusb ISO Read/Write not supported\n"));
-	status = STATUS_INVALID_PARAMETER;
-	length = 0;
+        MWLUsb_DbgPrint(1, ("Ezusb ISO Read/Write\n"));
+#if 0
+         Irp->IoStatus.Status = Ezusb_StartIsoTransfer(fdo,Irp);
+         Irp->IoStatus.Information = 0;
+#endif
       break;
 
       case IOCTL_EZUSB_START_ISO_STREAM:
-        MWLUsb_DbgPrint(1, ("Ezusb ISO Start Stream not supported\n"));
-	status = STATUS_INVALID_PARAMETER;
-	length = 0;
+        MWLUsb_DbgPrint(1, ("Ezusb ISO Start Stream\n"));
+#if 0
+         Irp->IoStatus.Status = Ezusb_StartIsoStream(fdo,Irp);
+         Irp->IoStatus.Information = 0;
+#endif
       break;
 
       case IOCTL_EZUSB_STOP_ISO_STREAM:
-        MWLUsb_DbgPrint(1, ("Ezusb ISO Stop Stream not supported\n"));
-	status = STATUS_INVALID_PARAMETER;
-	length = 0;
+        MWLUsb_DbgPrint(1, ("Ezusb ISO Stop Stream\n"));
+#if 0
+         pdx->StopIsoStream = TRUE;
+         Irp->IoStatus.Status = STATUS_SUCCESS;
+         Irp->IoStatus.Information = 0;
+#endif
       break;
 
       case IOCTL_EZUSB_READ_ISO_BUFFER:
       {
-        MWLUsb_DbgPrint(1, ("Ezusb ISO Read Buffer Not supported\n"));
-	status = STATUS_INVALID_PARAMETER;
-	length = 0;
+        MWLUsb_DbgPrint(1, ("Ezusb ISO Read Buffer\n"));
+#if 0
+         SIZE_T dataBytesToRead;
+         SIZE_T descriptorBytesToRead;
+         SIZE_T dataBytesRead;
+         SIZE_T descriptorBytesRead;
+
+         PISO_TRANSFER_CONTROL isoControl =
+            (PISO_TRANSFER_CONTROL)Irp->AssociatedIrp.SystemBuffer;
+
+         //
+         // verify the input and output params
+         //
+         if (inputBufferLength != sizeof(ISO_TRANSFER_CONTROL))
+         {
+            Irp->IoStatus.Information = 0; 
+            Irp->IoStatus.Status = STATUS_INVALID_PARAMETER;
+            break;
+         }
+
+         if (outputBufferLength !=
+             isoControl->PacketCount * (isoControl->PacketSize + sizeof(USBD_ISO_PACKET_DESCRIPTOR)))
+         {
+            Irp->IoStatus.Information = 0; 
+            Irp->IoStatus.Status = STATUS_INVALID_PARAMETER;
+            break;
+         }
+
+         //
+         // make sure the ring buffers exist
+         //
+         if (!(pdx->DataRingBuffer && pdx->DescriptorRingBuffer))
+         {
+            Irp->IoStatus.Information = 0; 
+            Irp->IoStatus.Status = STATUS_UNSUCCESSFUL;
+            break;
+         }
+
+         dataBytesToRead =  isoControl->PacketCount * isoControl->PacketSize;
+         dataBytesRead = ReadRingBuffer(pdx->DataRingBuffer,
+                                        MmGetSystemAddressForMdl(Irp->MdlAddress),
+                                        dataBytesToRead);
+         Ezusb_KdPrint("Copied %d bytes from the data ring buffer\n",dataBytesRead);
+
+         descriptorBytesToRead = (dataBytesRead / (SIZE_T)(isoControl->PacketSize)) * sizeof(USBD_ISO_PACKET_DESCRIPTOR);
+         descriptorBytesRead = ReadRingBuffer(pdx->DescriptorRingBuffer,
+                                        ((PUCHAR) MmGetSystemAddressForMdl(Irp->MdlAddress)) + dataBytesRead,
+                                        descriptorBytesToRead);
+         Ezusb_KdPrint("Copied %d bytes from the desc ring buffer\n",descriptorBytesRead);
+
+         Irp->IoStatus.Information = dataBytesRead + descriptorBytesRead;
+         Irp->IoStatus.Status = STATUS_SUCCESS;
+#endif
       }
       break;
 
@@ -722,8 +793,10 @@ Return Value:
         MWLUsb_DbgPrint(1, ("Exit MWLUsb_DispatchDevCtrl: Unsupported Ioctl code: %d\n", IoControlCode));
         break;
     }
-
+    free(malloc(64));
+    MWLUsb_DbgPrint(3, ("MWLUsb_DispatchDevCtrl complete request, status=%x, length = %d\n", status, length));
     WdfRequestCompleteWithInformation(Request, status, length);
+    free(malloc(64));
 
     MWLUsb_DbgPrint(3, ("Exit MWLUsb_DispatchDevCtrl\n"));
 
@@ -750,21 +823,20 @@ MWLUsb_VendorClassRequest(
    UNREFERENCED_PARAMETER(outBuffer);
    UNREFERENCED_PARAMETER(inBufferLength);
   
-
-   MWLUsb_DbgPrint(1, ("Ezusb Vendor Class Request\n"));
-   DoTraceMessage(MWLUSBDRIVER_ALL_INFO, "Ezusb Vendor or Class Request. \n");
-   cntl.Packet.bm.Request.Dir = pRequestControl->direction;
-   cntl.Packet.bm.Request.Recipient = pRequestControl->recepient;
-   cntl.Packet.bm.Request.Type = pRequestControl->requestType;
-   cntl.Packet.bRequest = pRequestControl->request;
-   cntl.Packet.wIndex.Value = pRequestControl->index;
-   cntl.Packet.wValue.Value = pRequestControl->value;
-   cntl.Packet.wLength = sizeof(cntl);
+       MWLUsb_DbgPrint(1, ("Ezusb Vendor Class Request\n"));
+       DoTraceMessage(MWLDXP50USBUMDF2Driver_ALL_INFO, "Ezusb Vendor or Class Request. \n");
+       cntl.Packet.bm.Request.Dir = pRequestControl->direction;
+       cntl.Packet.bm.Request.Recipient = pRequestControl->recepient;
+       cntl.Packet.bm.Request.Type = pRequestControl->requestType;
+       cntl.Packet.bRequest = pRequestControl->request;
+       cntl.Packet.wIndex.Value = pRequestControl->index;
+       cntl.Packet.wValue.Value = pRequestControl->value;
+       cntl.Packet.wLength = sizeof(cntl);
    
 #ifdef WDF_KERNEL_MODE
-   BYTE* transfer_buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, pDevContext->MaximumTransferSize, 'MWLU');
+       BYTE* transfer_buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, pDevContext->MaximumTransferSize, 'MWLU');
 #else
-   BYTE* transfer_buffer = malloc(pDevContext->MaximumTransferSize);
+       BYTE* transfer_buffer = malloc(pDevContext->MaximumTransferSize);
 #endif
        mem.Type = WdfMemoryDescriptorTypeBuffer;
        mem.u.BufferType.Buffer = transfer_buffer;
@@ -775,14 +847,14 @@ MWLUsb_VendorClassRequest(
        RtlZeroMemory(transfer_buffer, pDevContext->MaximumTransferSize);
        ntStatus = WdfUsbTargetDeviceSendControlTransferSynchronously(pDevContext->WdfUsbTargetDevice, Request, NULL, &cntl, &mem, &transfer_bytes);
        if (!NT_SUCCESS(ntStatus)) {
-           MWLUsb_DbgPrint(1, ("VENDOR_OR_CLASS_REQUEST: WdUsbTargetDeviceSendControlTransferSynchronously failed status=0x%x\n", ntStatus));
+           MWLUsb_DbgPrint(1, ("GET_STRING_DESC: WdUsbTargetDeviceSendControlTransferSynchronously failed status=0x%x\n", ntStatus));
          
        }
        else {
            length = (ULONG)((transfer_bytes >= *outBufferLength) ? *outBufferLength : transfer_bytes);
 
            RtlCopyMemory((BYTE*)outBuffer, transfer_buffer, length);
-           MWLUsb_DbgPrint(1, ("VENDOR_OR_CLASS_REQUEST: WdUsbTargetDeviceSendControlTransferSynchronously returns bDescriptorType = %x bLength = %x\n", rtn_desc->bDescriptorType, rtn_desc->bLength));
+           //   MWLUsb_DbgPrint(1, ("GET_STRING_DESC: WdUsbTargetDeviceSendControlTransferSynchronously returns bDescriptorType = %x bLength = %x\n", rtn_desc->bDescriptorType, rtn_desc->bLength));
           
        }
 #ifdef WDF_KERNEL_MODE
@@ -894,34 +966,12 @@ MWLUsb_VendorRequest(
     return ntStatus;
 }
 
-NTSTATUS MWLDXP50USBDriver_ResetPipe(
-		_In_ device,
-		_In_ WDFRequest Request, 
-		_In_ ULONG pipeNum)
-
-{   NTSTATUS status = STATUS_INVALID_STATE;
-    PDEVICE_CONTEXT    pDevContext = GetDeviceContext(device);
-
-    WDFUSBPIPE pipe = WdfUsbInterfaceGetConfiguredPipe(pDevContext->UsbInterface, (BYTE) pipeNum, NULL);
-
-    MWLUsb_DbgPrint(1, ("Reset pipe %d, pipehandle %x: \n", pipeNum, pipe));
-    if (pipe == NULL) {
-        MWLUsb_DbgPrint(1, ("pipe handle for pipenum %d is NULL\n", pipeNum));
-        status = STATUS_INVALID_PARAMETER;
-    }
-    status = WdfUsbTargetPipeResetSynchronously(pipe, Request, NULL);
-    if (!NT_SUCCESS(status)) {
-        MWLUsb_DbgPrint(1, ("Pipe Reset synchronous send failed requset status = 0x%x\n", status));
-    }
-    return status;
-}
-    
 
 NTSTATUS
-MWLDPX50USBUMDF2Driver_AbortPipe(
-		_In_ device,
-		_In_ WDFRequest Request, 
-		_In_ ULONG pipeNum)
+Ezusb_AbortPipe(
+    _In_ WDFDEVICE device,
+    _In_ USBD_PIPE_HANDLE PipeHandle
+    )
 /*++
 
 Routine Description:
@@ -940,27 +990,87 @@ Return Value:
    //PURB urb;
    //USBD_VERSION_INFORMATION VersionInformation;
 
-{   NTSTATUS status = STATUS_INVALID_STATE;
-    PDEVICE_CONTEXT    pDevContext = GetDeviceContext(device);
+   MWLUsb_DbgPrint(1, ("EZUSB.SYS: Entering Abort Pipe \n"));
+#if 0
+   urb = ExAllocatePool(NonPagedPool,
+                      sizeof(struct _URB_PIPE_REQUEST));
 
-    WDFUSBPIPE pipe = WdfUsbInterfaceGetConfiguredPipe(pDevContext->UsbInterface, (BYTE) pipeNum, NULL);
+   if (urb)
+   {
+      RtlZeroMemory(urb,sizeof(struct _URB_PIPE_REQUEST));
+      urb->UrbHeader.Length = (USHORT) sizeof (struct _URB_PIPE_REQUEST);
+      urb->UrbHeader.Function = URB_FUNCTION_ABORT_PIPE;
+      urb->UrbPipeRequest.PipeHandle = PipeHandle;
 
-    MWLUsb_DbgPrint(1, ("Abort pipe %d, pipehandle %x: \n", pipeNum, pipe));
-    if (pipe == NULL) {
-        MWLUsb_DbgPrint(1, ("pipe handle for pipenum %d is NULL\n", pipeNum));
-        status = STATUS_INVALID_PARAMETER;
-    }
-    status = WdfUsbTargetPipeAbortSynchronously(pipe, Request, NULL);
-    if (!NT_SUCCESS(status)) {
-        MWLUsb_DbgPrint(1, ("Pipe Reset synchronous send failed requset status = 0x%x\n", status));
-    }
-    return status;
+#if WIN98
+      USBD_GetUSBDIVersion(&VersionInformation);
+      if (VersionInformation.USBDI_Version < 0x101) 
+      {
+         Ezusb_KdPrint("Ezusb_ResetPipe() Detected OSR2.1\n");
+         urb->UrbHeader.Length -= sizeof(ULONG);
+      }
+#endif
+
+      ntStatus = Ezusb_CallUSBD(fdo, urb);
+
+      ExFreePool(urb);
+   }
+   else
+   {
+      ntStatus = STATUS_INSUFFICIENT_RESOURCES;
+   }
+
+   Ezusb_KdPrint ("EZUSB.SYS: Exit Abort Pipe %d\n", ntStatus);
+#else  
+   UNREFERENCED_PARAMETER(device);
+   UNREFERENCED_PARAMETER(PipeHandle);
+#endif
+   return ntStatus;
 }
 
 
+ULONG
+Ezusb_GetCurrentFrameNumber(
+    _In_ WDFDEVICE device
+    )
+{
+
+   NTSTATUS            ntStatus        = STATUS_SUCCESS;
+   ULONG frameNumber = 0;
+
+    
+   MWLUsb_DbgPrint(1, ("Enter Ezusb_GetCurrentFrameNumber\n"));    
+#if 0
+   pdx = fdo->DeviceExtension;
+
+   urb = ExAllocatePool(NonPagedPool,sizeof(struct _URB_GET_CURRENT_FRAME_NUMBER));
+
+   if (urb == NULL)
+      return 0;
+
+   RtlZeroMemory(urb,sizeof(struct _URB_GET_CURRENT_FRAME_NUMBER));
+
+   urb->UrbHeader.Length = sizeof(struct _URB_GET_CURRENT_FRAME_NUMBER);
+   urb->UrbHeader.Function = URB_FUNCTION_GET_CURRENT_FRAME_NUMBER;
+
+   ntStatus = Ezusb_CallUSBD(fdo, urb);
+
+   if (NT_SUCCESS(ntStatus))
+   {
+      frameNumber = urb->UrbGetCurrentFrameNumber.FrameNumber;
+   }
+
+   ExFreePool(urb);
+#else  
+   UNREFERENCED_PARAMETER(device);
+   UNREFERENCED_PARAMETER(frameNumber);
+   UNREFERENCED_PARAMETER(ntStatus);
+#endif
+   return frameNumber;
+}
 
 NTSTATUS
-Ezusb_ResetDevice(
+Ezusb_ResetParentPort(
     _In_ WDFDEVICE device
     )
 /*++
@@ -978,41 +1088,166 @@ Return Value:
 
 --*/
 {
-    NTSTATUS status = STATUS_SUCCESS;
-    PDEVICE_CONTEXT pDeviceContext;
-     
-    PAGED_CODE();
-  
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_IOCTL, "--> ResetDevice\n");
- 
-    pDeviceContext = GetDeviceContext(Device);
- 
-    //
-    // A NULL timeout indicates an infinite wake
-    //
-    status = WdfWaitLockAcquire(pDeviceContext->ResetDeviceWaitLock, NULL);
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_IOCTL, "ResetDevice - could not acquire lock\n");
-        return status;
-    }
- 
-    StopAllPipes(pDeviceContext);
-     
-    status = WdfUsbTargetDeviceResetPortSynchronously(pDeviceContext->UsbDevice);
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_IOCTL, "ResetDevice failed - 0x%x\n", status);
-    }
-     
-    status = StartAllPipes(pDeviceContext);
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, WDF_DRIVER, "Failed to start all pipes - 0x%x\n", status);
-    }
-     
-    WdfWaitLockRelease(pDeviceContext->ResetDeviceWaitLock);
- 
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+   
+
     MWLUsb_DbgPrint(1, ("EZUSB.SYS: enter Ezusb_ResetPort\n"));
+#if 0
+    pdx = fdo->DeviceExtension;
+
+    //
+    // issue a synchronous request
+    //
+
+    KeInitializeEvent(&event, NotificationEvent, FALSE);
+
+    irp = IoBuildDeviceIoControlRequest(
+                IOCTL_INTERNAL_USB_RESET_PORT,
+                pdx->StackDeviceObject,
+//                pdx->TopOfStackDeviceObject,
+                NULL,
+                0,
+                NULL,
+                0,
+                TRUE, /* INTERNAL */
+                &event,
+                &ioStatus);
+    if (!irp)
+    {
+        Ezusb_KdPrint("Unable to allocate IRP for sending URB\n");
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+
+    //
+    // Call the class driver to perform the operation.  If the returned status
+    // is PENDING, wait for the request to complete.
+    //
+
+    nextStack = IoGetNextIrpStackLocation(irp);
+    ASSERT(nextStack != NULL);
+
+    Ezusb_KdPrint ("EZUSB.SYS: calling USBD enable port api\n");
+
+    ntStatus = IoCallDriver(pdx->StackDeviceObject,
+                            irp);
+                            
+    Ezusb_KdPrint ("EZUSB.SYS: return from IoCallDriver USBD %x\n", ntStatus);
+
+    if (ntStatus == STATUS_PENDING) {
+
+        Ezusb_KdPrint ("EZUSB.SYS: Wait for single object\n");
+
+        status = KeWaitForSingleObject(
+                       &event,
+                       Suspended,
+                       KernelMode,
+                       FALSE,
+                       NULL);
+
+        Ezusb_KdPrint ("EZUSB.SYS: Wait for single object, returned %x\n", status);
+        
+    } else {
+        ioStatus.Status = ntStatus;
+    }
+
+    //
+    // USBD maps the error code for us
+    //
+    ntStatus = ioStatus.Status;
+#else  
+    UNREFERENCED_PARAMETER(device);
+    UNREFERENCED_PARAMETER(ntStatus);
+#endif
+    MWLUsb_DbgPrint(1, ("EZUSB.SYS: Ezusb_ResetPort (%x)\n", ntStatus));
 
     return ntStatus;
+}
+
+ULONG
+Ezusb_DownloadTest(
+    _In_ WDFDEVICE device,
+    _In_ PVENDOR_REQUEST_IN pVendorRequest
+    )
+{
+    NTSTATUS            ntStatus        = STATUS_SUCCESS;
+    ULONG length = 0;
+    
+    UNREFERENCED_PARAMETER(device);
+    UNREFERENCED_PARAMETER(pVendorRequest);
+    
+    MWLUsb_DbgPrint(1, ("Enter Ezusb_VendorRequest - yahoooo\n"));    
+#if 0
+    urb = ExAllocatePool(NonPagedPool, 
+                         sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST));
+
+    buffer1 = ExAllocatePool(NonPagedPool, CHUNKLENGTH);
+    buffer2 = ExAllocatePool(NonPagedPool, CHUNKLENGTH);
+
+    for (i=0; i < CHUNKLENGTH; i++)
+    {
+        buffer1[i] = (UCHAR) i;
+    }
+
+    if (urb)
+    {
+        for (i=0; i < 5120 / CHUNKLENGTH; i++)
+        {
+            RtlZeroMemory(urb,sizeof(struct  _URB_CONTROL_VENDOR_OR_CLASS_REQUEST));
+
+            //
+            // fill in the URB
+            //
+            urb->UrbHeader.Length = sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST);
+            urb->UrbHeader.Function = URB_FUNCTION_VENDOR_DEVICE;
+
+            urb->UrbControlVendorClassRequest.TransferBufferLength = CHUNKLENGTH;
+            urb->UrbControlVendorClassRequest.TransferBuffer = buffer1;
+            urb->UrbControlVendorClassRequest.TransferBufferMDL = NULL;
+            urb->UrbControlVendorClassRequest.Request = 0xA0;
+            urb->UrbControlVendorClassRequest.Value = (unsigned short) i * CHUNKLENGTH;
+            urb->UrbControlVendorClassRequest.Index = 0;
+
+            ntStatus = Ezusb_CallUSBD(fdo, urb);
+
+        }
+
+        for (i=0; i < 5120 / CHUNKLENGTH; i++)
+        {
+            RtlZeroMemory(urb,sizeof(struct  _URB_CONTROL_VENDOR_OR_CLASS_REQUEST));
+            RtlZeroMemory(buffer2, CHUNKLENGTH);
+
+            //
+            // fill in the URB
+            //
+            urb->UrbHeader.Length = sizeof(struct _URB_CONTROL_VENDOR_OR_CLASS_REQUEST);
+            urb->UrbHeader.Function = URB_FUNCTION_VENDOR_DEVICE;
+
+            urb->UrbControlVendorClassRequest.TransferBufferLength = CHUNKLENGTH;
+            urb->UrbControlVendorClassRequest.TransferBuffer = buffer2;
+            urb->UrbControlVendorClassRequest.TransferBufferMDL = NULL;
+            urb->UrbControlVendorClassRequest.Request = 0xA0;
+            urb->UrbControlVendorClassRequest.Value = (unsigned short) i * CHUNKLENGTH;
+            urb->UrbControlVendorClassRequest.Index = 0;
+            urb->UrbControlVendorClassRequest.TransferFlags |= USBD_TRANSFER_DIRECTION_IN;
+
+            ntStatus = Ezusb_CallUSBD(fdo, urb);
+
+            CompareCount = RtlCompareMemory(buffer1,buffer2,CHUNKLENGTH);
+            Ezusb_KdPrint("%d matched\n", CompareCount);
+            if (CompareCount != CHUNKLENGTH)
+            {
+                Ezusb_KdPrint ("**** Compare Error *****************************************************\n");
+            }
+
+
+        }
+
+    }
+#else  
+    UNREFERENCED_PARAMETER(device);
+    UNREFERENCED_PARAMETER(ntStatus);
+#endif
+    return length;
 }
 
 
@@ -1373,7 +1608,727 @@ CleanupSetInterface:
 
 #define BYTES_PER_LINE 0x10
 
+#if 0
+void
+DumpBuffer(PVOID pvBuffer, ULONG length)
+{
+    //int                    nItems    = 0;
+    char                   temp[64]  = "";
+    char                   temp2[64]  = "";
+    ULONG    i;
+    ULONG   j;
+    PUCHAR    ptr;
 
+
+    ptr = (PUCHAR) pvBuffer;
+
+    for (i = 0; i < ((length + BYTES_PER_LINE - 1) / BYTES_PER_LINE); i++)
+    {
+        sprintf(temp,"%04X ",(i*BYTES_PER_LINE));
+        for (j = 0; j < BYTES_PER_LINE; j++)
+        {
+            if (((i * BYTES_PER_LINE) + j) < length)
+            {
+                sprintf(temp2,"%02X ",*ptr++);
+                strcat(temp,temp2);
+            }
+        }
+//        SendMessage (hOutputBox, LB_ADDSTRING, 0, (LPARAM)temp);
+         Ezusb_KdPrint ("%s\n",temp);
+    }
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// @func Lock a SIMPLE device object
+// @parm Address of our device extension
+// @rdesc TRUE if it was possible to lock the device, FALSE otherwise.
+// @comm A FALSE return value indicates that we're in the process of deleting
+// the device object, so all new requests should be failed
+
+BOOLEAN LockDevice(
+   IN PDEVICE_OBJECT 
+   )
+{
+   KIRQL             oldIrql;
+   LONG usage;
+   PDEVICE_EXTENSION pdx = (PDEVICE_EXTENSION) fdo->DeviceExtension;
+   KeAcquireSpinLock (&(pdx->IoCountSpinLock), &oldIrql);
+
+   // Increment use count on our device object
+   usage = InterlockedIncrement(&pdx->usage);
+
+   // AddDevice initialized the use count to 1, so it ought to be bigger than
+   // one now. HandleRemoveDevice sets the "removing" flag and decrements the
+   // use count, possibly to zero. So if we find a use count of "1" now, we
+   // should also find the "removing" flag set.
+
+   // ASSERT(usage > 1 || pdx->removing);
+
+   // If device is about to be removed, restore the use count and return FALSE.
+   // If we're in a race with HandleRemoveDevice (maybe running on another CPU),
+   // the sequence we've followed is guaranteed to avoid a mistaken deletion of
+   // the device object. If we test "removing" after HandleRemoveDevice sets it,
+   // we'll restore the use count and return FALSE. In the meantime, if
+   // HandleRemoveDevice decremented the count to 0 before we did our increment,
+   // its thread will have set the remove event. Otherwise, we'll decrement to 0
+   // and set the event. Either way, HandleRemoveDevice will wake up to finish
+   // removing the device, and we'll return FALSE to our caller.
+   // 
+   // If, on the other hand, we test "removing" before HandleRemoveDevice sets it,
+   // we'll have already incremented the use count past 1 and will return TRUE.
+   // Our caller will eventually call UnlockDevice, which will decrement the use
+   // count and might set the event HandleRemoveDevice is waiting on at that point.
+
+   if (pdx->removing) 
+    {
+       if (InterlockedDecrement(&pdx->usage) == 0){
+           KeSetEvent(&pdx->evRemove, 0, FALSE);
+       }
+       KeReleaseSpinLock (&(pdx->IoCountSpinLock), oldIrql);
+       return FALSE;
+    }
+   KeReleaseSpinLock (&(pdx->IoCountSpinLock), oldIrql);
+   return TRUE;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// @func Unlock a SIMPLE device object
+// @parm Address of our device extension
+// @comm If the use count drops to zero, set the evRemove event because we're
+// about to remove this device object.
+
+void UnlockDevice(
+   PDEVICE_OBJECT fdo
+   )
+{
+   KIRQL oldIrql;
+   LONG  usage;
+   PDEVICE_EXTENSION pdx = (PDEVICE_EXTENSION) fdo->DeviceExtension;
+   KeAcquireSpinLock (&(pdx->IoCountSpinLock), &oldIrql);
+
+   usage = InterlockedDecrement(&pdx->usage);
+
+  // ASSERT(usage >= 0);
+
+   if (usage == 0)
+   {                        // removing device
+      ASSERT(pdx->removing);    // HandleRemoveDevice should already have set this
+      KeSetEvent(&pdx->evRemove, 0, FALSE);
+   }
+   KeReleaseSpinLock (&(pdx->IoCountSpinLock), oldIrql);
+}
+
+NTSTATUS IsoTransferComplete(
+   IN PDEVICE_OBJECT bunkfdo,
+   IN PIRP Irp,
+   IN PVOID Context
+   )
+{
+   NTSTATUS ntStatus,status;
+   PISO_TRANSFER_OBJECT transferObject = (PISO_TRANSFER_OBJECT) Context;
+   PISO_STREAM_OBJECT streamObject = transferObject->StreamObject;
+   PDEVICE_OBJECT fdo = streamObject->DeviceObject;
+   PDEVICE_EXTENSION          pdx = fdo->DeviceExtension;
+   PIO_STACK_LOCATION nextStack;
+   PURB urb = transferObject->Urb;
+   USHORT urbSize = 0;
+   ULONG i;
+   
+   UNREFERENCED_PARAMETER(bunkfdo);
+
+   Ezusb_KdPrint("IsoTransferComplete Irp Status 0x%x\n",Irp->IoStatus.Status);
+
+   //
+   // copy the ISO transfer descriptors to the callers buffer.  The user mode caller passed
+   // in a large buffer.  That buffer holds both the data and also provides space for the ISO
+   // descriptors.  This way, the caller can verify the status of each ISO packet transmitted
+   // or sent.
+   //
+   RtlCopyMemory((PUCHAR) streamObject->IsoDescriptorBuffer + (transferObject->Frame * sizeof(USBD_ISO_PACKET_DESCRIPTOR)),
+                 urb->UrbIsochronousTransfer.IsoPacket,
+                 (streamObject->FramesPerBuffer * sizeof(USBD_ISO_PACKET_DESCRIPTOR)));
+
+   for (i=0;i<streamObject->FramesPerBuffer; i++)
+   {
+      Ezusb_KdPrint ("Packet %d length = %d status = %d\n",i,
+         urb->UrbIsochronousTransfer.IsoPacket[i].Length,urb->UrbIsochronousTransfer.IsoPacket[i].Status);
+   }
+      
+   
+   transferObject->Frame += (streamObject->FramesPerBuffer * streamObject->BufferCount);
+
+   if (transferObject->Frame < streamObject->NumPackets)
+   {
+      Ezusb_KdPrint("IsoTransferComplete setting up the next transfer at frame %d\n",transferObject->Frame);
+
+      //
+      // reinitialize the URB for the next transfer.
+      //
+      urbSize = (USHORT)GET_ISO_URB_SIZE(streamObject->FramesPerBuffer);
+      RtlZeroMemory(urb,urbSize);
+
+      urb->UrbHeader.Length = urbSize;
+      urb->UrbHeader.Function = URB_FUNCTION_ISOCH_TRANSFER;
+      urb->UrbIsochronousTransfer.PipeHandle = streamObject->PipeInfo->PipeHandle;
+      urb->UrbIsochronousTransfer.TransferFlags =
+         USB_ENDPOINT_DIRECTION_IN(streamObject->PipeInfo->EndpointAddress) ? USBD_TRANSFER_DIRECTION_IN : 0;
+      urb->UrbIsochronousTransfer.TransferFlags |=
+         USBD_START_ISO_TRANSFER_ASAP;
+      urb->UrbIsochronousTransfer.TransferFlags |=
+         USBD_SHORT_TRANSFER_OK;
+      urb->UrbIsochronousTransfer.TransferBufferLength =
+         streamObject->PacketSize * streamObject->FramesPerBuffer;
+      urb->UrbIsochronousTransfer.TransferBuffer =
+         ((PUCHAR) streamObject->TransferBuffer) +  (transferObject->Frame * streamObject->PacketSize);
+      urb->UrbIsochronousTransfer.NumberOfPackets = streamObject->FramesPerBuffer;
+
+      for (i=0; i<streamObject->FramesPerBuffer; i++)
+      {
+         urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * streamObject->PacketSize;
+         urb->UrbIsochronousTransfer.IsoPacket[i].Length = streamObject->PacketSize;
+      }
+
+      //
+      // initialize the IRP for the next transfer
+      // cuz lynn says I hafta
+      //
+      IoInitializeIrp(Irp,
+                     IoSizeOfIrp((pdx->StackDeviceObject->StackSize + 1)),
+                     (CCHAR)(pdx->StackDeviceObject->StackSize + 1));
+
+      nextStack = IoGetNextIrpStackLocation(Irp);
+
+      nextStack->Parameters.Others.Argument1 = transferObject->Urb;
+      nextStack->Parameters.DeviceIoControl.IoControlCode = 
+         IOCTL_INTERNAL_USB_SUBMIT_URB;                    
+      nextStack->MajorFunction = IRP_MJ_INTERNAL_DEVICE_CONTROL;
+
+      IoSetCompletionRoutine(Irp,
+             IsoTransferComplete,
+             transferObject,
+             TRUE,
+             TRUE,
+             TRUE);
+
+      //
+      // submit the request
+      //
+      status = IoCallDriver(pdx->StackDeviceObject,Irp);
+      Ezusb_KdPrint("IsoTransferComplete Resubmit Irp Status 0x%x\n",status);
+      ntStatus = STATUS_MORE_PROCESSING_REQUIRED;
+   }
+   else
+   {
+      Ezusb_KdPrint("IsoTransferComplete All done, setting event\n");
+
+      IoFreeIrp(Irp);
+      ExFreePool(urb);
+
+      KeSetEvent(&transferObject->Done,1,FALSE);
+
+      ntStatus = STATUS_MORE_PROCESSING_REQUIRED;
+   }
+
+   return ntStatus;
+}
+
+NTSTATUS Ezusb_StartIsoTransfer(
+   IN PDEVICE_OBJECT fdo,
+   IN PIRP Irp
+   )
+{
+   PDEVICE_EXTENSION          pdx = fdo->DeviceExtension;
+   PIO_STACK_LOCATION         irpStack = IoGetCurrentIrpStackLocation (Irp);
+   PISO_TRANSFER_CONTROL      isoControl =
+                              (PISO_TRANSFER_CONTROL)Irp->AssociatedIrp.SystemBuffer;
+   ULONG                      bufferLength =
+                              irpStack->Parameters.DeviceIoControl.OutputBufferLength;
+   ULONG                      packetSize = 0;
+   PUSBD_INTERFACE_INFORMATION interfaceInfo = NULL;
+   PUSBD_PIPE_INFORMATION     pipeInfo = NULL;
+   USBD_PIPE_HANDLE           pipeHandle = NULL;
+   PISO_STREAM_OBJECT         streamObject;
+   ULONG                      i;
+
+   //
+   // verify that the selected pipe is valid, and get a handle to it. If anything
+   // is wrong, return an error
+   //
+   interfaceInfo = pdx->Interface;
+
+   if (!interfaceInfo)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() no interface info - Exiting\n");
+      return STATUS_UNSUCCESSFUL;
+   }
+   
+   if (isoControl->PipeNum > interfaceInfo->NumberOfPipes)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() invalid pipe - Exiting\n");
+      return STATUS_INVALID_PARAMETER;
+   }
+
+   pipeInfo = &(interfaceInfo->Pipes[isoControl->PipeNum]);
+
+   if (!(pipeInfo->PipeType == UsbdPipeTypeIsochronous))
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() invalid pipe - Exiting\n");
+      return STATUS_INVALID_PARAMETER;
+   }
+
+   pipeHandle = pipeInfo->PipeHandle;
+
+   if (!pipeHandle)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() invalid pipe - Exiting\n");
+      return STATUS_UNSUCCESSFUL;
+   }
+
+   //
+   // verify that the FramesPerBuffer and BufferCount parameters are correct.
+   // A "feature" of this function is that PacketCount must
+   // be zero modulus (FramesPerBuffer * BufferCount).
+   //
+   if (isoControl->PacketCount % (isoControl->FramesPerBuffer * isoControl->BufferCount))
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() Invalid parameter - Exiting\n");
+      return STATUS_INVALID_PARAMETER;
+   }
+
+   //
+   // verify that the caller has provided a buffer large enough for
+   // the requested transfer.  The buffer must have room for all of
+   // the ISO data plus room for an array of ISO Packet Descriptor
+   // objects (1 for each packet transferred).
+   //
+   packetSize = isoControl->PacketSize;
+
+   if (bufferLength < (isoControl->PacketCount * (packetSize + sizeof(USBD_ISO_PACKET_DESCRIPTOR))))
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() OutputBuffer too small - Exiting\n");
+      return STATUS_UNSUCCESSFUL;
+   }
+
+   //
+   // Allocate the streamObject
+   //
+   streamObject = ExAllocatePool(NonPagedPool, sizeof(ISO_STREAM_OBJECT));
+
+   if (!streamObject)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() unable to allocate stream object - Exiting\n");
+      return STATUS_NO_MEMORY;
+   }
+
+   //
+   // FramesPerBuffer specifies how many frames of ISO data are transferred
+   // by a single URB.  This field corresponds to the NumberOfPackets
+   // field in the ISO transfer URB (_URB_ISOCH_TRANSFER)
+   //
+   streamObject->FramesPerBuffer = isoControl->FramesPerBuffer;
+
+   //
+   // BufferCount specifies how many IRP's are queued to carry out an ISO transfer.
+   //
+   streamObject->BufferCount = isoControl->BufferCount;
+
+   streamObject->DeviceObject = fdo;
+   streamObject->PipeInfo = pipeInfo;
+   streamObject->PacketSize = packetSize;
+   streamObject->NumPackets = isoControl->PacketCount;
+   streamObject->TransferBuffer = MmGetSystemAddressForMdl(Irp->MdlAddress);
+   streamObject->TransferBufferLength = streamObject->PacketSize * streamObject->NumPackets;
+   streamObject->IsoDescriptorBuffer = (PUCHAR) streamObject->TransferBuffer + streamObject->TransferBufferLength;
+   
+   streamObject->TransferObject = ExAllocatePool(NonPagedPool,
+                            sizeof(ISO_TRANSFER_OBJECT) * streamObject->BufferCount);
+
+   if (!streamObject->TransferObject)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() unable to allocate transfer object - Exiting\n");
+      return STATUS_NO_MEMORY;
+   }
+
+   for (i=0; i < streamObject->BufferCount; i++)
+   {
+      InitTransferObject(streamObject,i);
+   }
+
+   for (i=0; i < streamObject->BufferCount; i++)
+   {
+      IoCallDriver(pdx->StackDeviceObject,
+                  streamObject->TransferObject[i].Irp);
+   }
+
+   //
+   // wait for those guys to finish
+   //
+   for (i=0; i < streamObject->BufferCount; i++)
+   {
+      KeWaitForSingleObject(
+                    &streamObject->TransferObject[i].Done,
+                    Suspended,
+                    KernelMode,
+                    FALSE,
+                    NULL);
+   }
+
+   //
+   // free the stream and transfer objects
+   //
+   ExFreePool(streamObject->TransferObject);
+   ExFreePool(streamObject);
+
+   return STATUS_SUCCESS;
+}
+
+NTSTATUS IsoStreamTransferComplete(
+   IN PDEVICE_OBJECT bunkfdo,
+   IN PIRP Irp,
+   IN PVOID Context
+   )
+{
+   NTSTATUS ntStatus,status;
+   PISO_TRANSFER_OBJECT transferObject = (PISO_TRANSFER_OBJECT) Context;
+   PISO_STREAM_OBJECT streamObject = transferObject->StreamObject;
+   PDEVICE_OBJECT fdo = streamObject->DeviceObject;
+   PDEVICE_EXTENSION          pdx = fdo->DeviceExtension;
+   PIO_STACK_LOCATION nextStack;
+   PURB urb = transferObject->Urb;
+   USHORT urbSize = 0;
+   ULONG i;
+   //PUSBD_PIPE_INFORMATION     pipeInfo = streamObject->PipeInfo;
+
+   UNREFERENCED_PARAMETER(bunkfdo);
+   Ezusb_KdPrint("IsoTransferComplete Irp Status 0x%x\n",Irp->IoStatus.Status);
+   for (i=0;i<streamObject->FramesPerBuffer; i++)
+   {
+      Ezusb_KdPrint ("Packet %d length = %d status = %d\n",i,
+         urb->UrbIsochronousTransfer.IsoPacket[i].Length,urb->UrbIsochronousTransfer.IsoPacket[i].Status);
+   }
+
+   //
+   // write the transfer descriptors to the descriptor ring buffer
+   //
+   WriteRingBuffer(streamObject->DescriptorRingBuffer,
+                   (PUCHAR) &urb->UrbIsochronousTransfer.IsoPacket[0],
+                   (streamObject->FramesPerBuffer * sizeof(USBD_ISO_PACKET_DESCRIPTOR)));
+
+   //
+   // write the transfer data to the data ring buffer
+   //
+   WriteRingBuffer(streamObject->DataRingBuffer,
+                   urb->UrbIsochronousTransfer.TransferBuffer,
+                   (streamObject->FramesPerBuffer * streamObject->PacketSize));
+
+
+   //
+   // If no errors occured, re-initialize and re-submit the IRP/URB
+   //
+    if (NT_SUCCESS(Irp->IoStatus.Status) && !pdx->StopIsoStream)
+   {
+
+      urbSize = (USHORT)GET_ISO_URB_SIZE(streamObject->FramesPerBuffer);
+      RtlZeroMemory(urb,urbSize);
+
+      urb->UrbHeader.Length = urbSize;
+      urb->UrbHeader.Function = URB_FUNCTION_ISOCH_TRANSFER;
+      urb->UrbIsochronousTransfer.PipeHandle = streamObject->PipeInfo->PipeHandle;
+      urb->UrbIsochronousTransfer.TransferFlags =
+         USB_ENDPOINT_DIRECTION_IN(streamObject->PipeInfo->EndpointAddress) ? USBD_TRANSFER_DIRECTION_IN : 0;
+      urb->UrbIsochronousTransfer.TransferFlags |=
+         USBD_START_ISO_TRANSFER_ASAP;
+      urb->UrbIsochronousTransfer.TransferFlags |=
+         USBD_SHORT_TRANSFER_OK;
+      urb->UrbIsochronousTransfer.TransferBufferLength =
+         streamObject->PacketSize * streamObject->FramesPerBuffer;
+      urb->UrbIsochronousTransfer.TransferBuffer =
+         ((PUCHAR) streamObject->TransferBuffer) +  (transferObject->Frame * streamObject->PacketSize);
+      urb->UrbIsochronousTransfer.NumberOfPackets = streamObject->FramesPerBuffer;
+
+      for (i=0; i<streamObject->FramesPerBuffer; i++)
+      {
+         urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * streamObject->PacketSize;
+         urb->UrbIsochronousTransfer.IsoPacket[i].Length = streamObject->PacketSize;
+      }
+
+      //
+      // initialize the IRP for the next transfer
+      // cuz lynn says I hafta
+      //
+      IoInitializeIrp(Irp,
+                     IoSizeOfIrp((pdx->StackDeviceObject->StackSize + 1)),
+                     (CCHAR)(pdx->StackDeviceObject->StackSize + 1));
+
+      nextStack = IoGetNextIrpStackLocation(Irp);
+
+      nextStack->Parameters.Others.Argument1 = transferObject->Urb;
+      nextStack->Parameters.DeviceIoControl.IoControlCode = 
+         IOCTL_INTERNAL_USB_SUBMIT_URB;                    
+      nextStack->MajorFunction = IRP_MJ_INTERNAL_DEVICE_CONTROL;
+
+      IoSetCompletionRoutine(Irp,
+             IsoStreamTransferComplete,
+             transferObject,
+             TRUE,
+             TRUE,
+             TRUE);
+
+      //
+      // submit the request
+      //
+      status = IoCallDriver(pdx->StackDeviceObject,Irp);
+      //Ezusb_KdPrint("IsoTransferComplete Resubmit Irp Status 0x%x\n",status);
+      ntStatus = STATUS_MORE_PROCESSING_REQUIRED;
+   }
+   else
+   {
+      Ezusb_KdPrint("IsoTransferComplete All done, setting event\n");
+
+      IoFreeIrp(Irp);
+      ExFreePool(urb);
+
+      streamObject->PendingTransfers--;
+      if (streamObject->PendingTransfers == 0)
+      {
+         ExFreePool(streamObject->TransferBuffer);
+         ExFreePool(streamObject->TransferObject);
+         FreeRingBuffer(streamObject->DataRingBuffer);
+         pdx->DataRingBuffer = NULL;
+         FreeRingBuffer(streamObject->DescriptorRingBuffer);
+         pdx->DescriptorRingBuffer = NULL;
+
+         ExFreePool(streamObject);
+      }
+
+      ntStatus = STATUS_MORE_PROCESSING_REQUIRED;
+   }
+
+   return ntStatus;
+}
+
+NTSTATUS Ezusb_StartIsoStream(
+   IN PDEVICE_OBJECT fdo,
+   IN PIRP Irp
+   )
+{
+   PDEVICE_EXTENSION          pdx = fdo->DeviceExtension;
+   // PIO_STACK_LOCATION         irpStack = IoGetCurrentIrpStackLocation (Irp);
+   PISO_TRANSFER_CONTROL      isoControl =
+                              (PISO_TRANSFER_CONTROL)Irp->AssociatedIrp.SystemBuffer;
+   PUSBD_INTERFACE_INFORMATION interfaceInfo = NULL;
+   PUSBD_PIPE_INFORMATION     pipeInfo = NULL;
+   USBD_PIPE_HANDLE           pipeHandle = NULL;
+   PISO_STREAM_OBJECT         streamObject;
+   ULONG                      i;
+
+   //
+   // verify that the selected pipe is valid, and get a handle to it. If anything
+   // is wrong, return an error
+   //
+   interfaceInfo = pdx->Interface;
+
+   if (!interfaceInfo)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() no interface info - Exiting\n");
+      return STATUS_UNSUCCESSFUL;
+   }
+   
+   if (isoControl->PipeNum > interfaceInfo->NumberOfPipes)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() invalid pipe - Exiting\n");
+      return STATUS_INVALID_PARAMETER;
+   }
+
+   pipeInfo = &(interfaceInfo->Pipes[isoControl->PipeNum]);
+
+   if (!(pipeInfo->PipeType == UsbdPipeTypeIsochronous))
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() invalid pipe - Exiting\n");
+      return STATUS_INVALID_PARAMETER;
+   }
+
+   pipeHandle = pipeInfo->PipeHandle;
+
+   if (!pipeHandle)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() invalid pipe - Exiting\n");
+      return STATUS_UNSUCCESSFUL;
+   }
+
+   //
+   // Allocate the streamObject
+   //
+   streamObject = ExAllocatePool(NonPagedPool, sizeof(ISO_STREAM_OBJECT));
+
+   if (!streamObject)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() unable to allocate stream object - Exiting\n");
+      return STATUS_NO_MEMORY;
+   }
+
+   //
+   // FramesPerBuffer specifies how many frames of ISO data are transferred
+   // by a single URB.  This field corresponds to the NumberOfPackets
+   // field in the ISO transfer URB (_URB_ISOCH_TRANSFER)
+   //
+// MDNISO   streamObject->PendingTransfers = 
+   streamObject->FramesPerBuffer = isoControl->FramesPerBuffer;
+
+   //
+   // BufferCount specifies how many IRP's are queued to carry out an ISO transfer.
+   //
+   streamObject->PendingTransfers = 
+   streamObject->BufferCount = isoControl->BufferCount;
+
+   streamObject->DeviceObject = fdo;
+   streamObject->PipeInfo = pipeInfo;
+   streamObject->PacketSize = isoControl->PacketSize;
+   streamObject->TransferBufferLength = streamObject->PacketSize * streamObject->FramesPerBuffer * streamObject->BufferCount;
+   streamObject->TransferBuffer = ExAllocatePool(NonPagedPool, streamObject->TransferBufferLength);
+   if (!streamObject->TransferBuffer)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() unable to allocate transfer buffer - Exiting\n");
+      return STATUS_NO_MEMORY;
+   }
+
+   streamObject->DataRingBuffer = AllocRingBuffer(isoControl->PacketCount * isoControl->PacketSize);
+   if (!streamObject->DataRingBuffer)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() unable to allocate data ring buffer - Exiting\n");
+      return STATUS_NO_MEMORY;
+   }
+   pdx->DataRingBuffer = streamObject->DataRingBuffer;
+   
+   streamObject->DescriptorRingBuffer =
+      AllocRingBuffer(isoControl->PacketCount * sizeof(USBD_ISO_PACKET_DESCRIPTOR));
+   if (!streamObject->DescriptorRingBuffer)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() unable to allocate descriptor ring buffer - Exiting\n");
+      return STATUS_NO_MEMORY;
+   }
+   pdx->DescriptorRingBuffer = streamObject->DescriptorRingBuffer;
+
+   streamObject->TransferObject = ExAllocatePool(NonPagedPool,
+                            sizeof(ISO_TRANSFER_OBJECT) * streamObject->BufferCount);
+
+   if (!streamObject->TransferObject)
+   {
+      Ezusb_KdPrint("Ezusb_StartIsoTransfer() unable to allocate transfer object - Exiting\n");
+      return STATUS_NO_MEMORY;
+   }
+
+   for (i=0; i < streamObject->BufferCount; i++)
+   {
+      InitTransferObject(streamObject,i);
+
+      //
+      // override the completion routine that InitTransferObject registered
+      //
+      IoSetCompletionRoutine(streamObject->TransferObject[i].Irp,
+                             IsoStreamTransferComplete,
+                             &streamObject->TransferObject[i],
+                             TRUE,
+                             TRUE,
+                             TRUE);
+
+
+   }
+
+   pdx->StopIsoStream = FALSE;
+
+   for (i=0; i < streamObject->BufferCount; i++)
+   {
+      IoCallDriver(pdx->StackDeviceObject,
+                  streamObject->TransferObject[i].Irp);
+   }
+
+   return STATUS_SUCCESS;
+}
+
+NTSTATUS InitTransferObject(
+   IN OUT PISO_STREAM_OBJECT streamObject,
+   IN ULONG index
+   )
+{
+   PISO_TRANSFER_OBJECT transferObject = &streamObject->TransferObject[index];
+   PUSBD_PIPE_INFORMATION pipeInfo = streamObject->PipeInfo;
+   USHORT urbSize = 0;
+   CCHAR stackSize;
+   PIO_STACK_LOCATION nextStack = NULL;
+   PURB urb = NULL;
+   PIRP irp = NULL;
+   PDEVICE_EXTENSION pdx =
+      (PDEVICE_EXTENSION) streamObject->DeviceObject->DeviceExtension;
+   ULONG i;
+
+
+   //
+   // allocate and prepare the URB
+   //
+   urbSize = (USHORT)GET_ISO_URB_SIZE(streamObject->FramesPerBuffer);
+
+   urb = ExAllocatePool(NonPagedPool, urbSize);
+   RtlZeroMemory(urb,urbSize);
+
+   urb->UrbHeader.Length = urbSize;
+   urb->UrbHeader.Function = URB_FUNCTION_ISOCH_TRANSFER;
+   urb->UrbIsochronousTransfer.PipeHandle = pipeInfo->PipeHandle;
+   urb->UrbIsochronousTransfer.TransferFlags =
+      USB_ENDPOINT_DIRECTION_IN(pipeInfo->EndpointAddress) ? USBD_TRANSFER_DIRECTION_IN : 0;
+   urb->UrbIsochronousTransfer.TransferFlags |=
+      USBD_START_ISO_TRANSFER_ASAP;
+   urb->UrbIsochronousTransfer.TransferFlags |=
+      USBD_SHORT_TRANSFER_OK;
+   urb->UrbIsochronousTransfer.TransferBufferLength =
+      streamObject->PacketSize * streamObject->FramesPerBuffer;
+   urb->UrbIsochronousTransfer.TransferBuffer =
+      ((PUCHAR) streamObject->TransferBuffer) +  (index * streamObject->PacketSize * streamObject->FramesPerBuffer);
+
+   urb->UrbIsochronousTransfer.NumberOfPackets = streamObject->FramesPerBuffer;
+
+   //
+   // setup the ISO packet descriptors
+   //
+   for (i=0; i<streamObject->FramesPerBuffer; i++)
+   {
+      urb->UrbIsochronousTransfer.IsoPacket[i].Offset = i * streamObject->PacketSize;
+      urb->UrbIsochronousTransfer.IsoPacket[i].Length = streamObject->PacketSize;
+   }
+
+   stackSize = (CCHAR) (pdx->StackDeviceObject->StackSize + 1);
+
+   //
+   // allocate and prepare the IRP
+   //
+   irp = IoAllocateIrp(stackSize, FALSE);
+   IoInitializeIrp(irp, irp->Size, stackSize);
+
+   nextStack = IoGetNextIrpStackLocation(irp);
+
+   nextStack->Parameters.Others.Argument1 = urb;
+   nextStack->Parameters.DeviceIoControl.IoControlCode = 
+      IOCTL_INTERNAL_USB_SUBMIT_URB;                    
+   nextStack->MajorFunction = IRP_MJ_INTERNAL_DEVICE_CONTROL;
+
+   IoSetCompletionRoutine(irp,
+                          IsoTransferComplete,
+                          transferObject,
+                          TRUE,
+                          TRUE,
+                          TRUE);
+
+   transferObject->Frame = index * streamObject->FramesPerBuffer;
+   transferObject->Urb = urb;
+   transferObject->Irp = irp;
+   transferObject->StreamObject = streamObject;
+   KeInitializeEvent(&transferObject->Done, NotificationEvent, FALSE);
+
+   return STATUS_SUCCESS;
+}
+#endif
 NTSTATUS Ezusb_8051Reset(
    _In_ WDFDEVICE device,
    _In_ UCHAR resetBit
