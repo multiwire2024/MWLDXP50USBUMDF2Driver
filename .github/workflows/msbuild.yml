@@ -68,7 +68,7 @@ jobs:
     - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
-          name: MWLUSB-Windows-${{env.build_machine}}-${{env.build_config}}
-          path: ${{ github.workspace }}\MWLDXP50USBUMDF2Driver\${{env.build_machine}}\${{matrix.build_config}}\MWL DXP50 USB UMDF 2 Driver
+          name: MWLDXP50USBUMDF2Driver-Windows-${{env.build_machine}}-${{env.build_config}}
+          path: ${{ github.workspace }}\${{env.build_machine}}\${{matrix.build_config}}\MWL DXP50 USB UMDF 2 Driver
           overwrite: true
       
