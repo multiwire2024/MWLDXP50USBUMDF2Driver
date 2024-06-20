@@ -7,22 +7,20 @@ name: MSBuild
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch: 
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 env:
   # Path to the solution file relative to the root of the project.
-  SOLUTION_FILE_PATH: './MWL USB Driver/MWL USB Driver.sln'
-  CYUSB_SOLUTION_PATH: ./library/cpp/CyAPI.sln
-  build_machine: x64
-  NUGETEXETOOLPATH: 'c:\"Program Files"\Nuget\Nuget.exe'
+  SOLUTION_FILE_PATH: .
+
 
   # Configuration type to build.
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
   # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+  BUILD_CONFIGURATION: Release
+
 
 permissions:
   contents: read
@@ -58,7 +56,7 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run:  powershell ./.github/externals/set-env.ps1 >.env
       
-    - name: Build mwlusb
+    - name: Build mwl dxp50 usb umdf2 driver
       working-directory:  ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
@@ -69,6 +67,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
           name: MWLUSB-Windows-${{env.build_machine}}-${{env.build_config}}
-          path: ${{ github.workspace }}\MWL USB Driver\${{env.build_machine}}\${{matrix.build_config}}\MWL USB Driver
+          path: ${{ github.workspace }}\MWLDXP50USBUMDF2Driver\${{env.build_machine}}\${{matrix.build_config}}\MWLDXP50USBUMDF2Driver
           overwrite: true
       
