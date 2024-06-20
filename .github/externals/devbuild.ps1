@@ -1,7 +1,7 @@
 param (
     [string] $config = "Debug",
     [string] $arch = "x64",
-    [string] $solution = "./MWL USB Driver.sln",
+    [string] $solution = "./MWL DXP50 USB UMDF 2 Driver.sln",
     [string] $artifact_dir = "."
 )
 $Preferred_VS_Version=2019
@@ -151,4 +151,4 @@ Write-Host "$vs_root $Solution $config $arch"
 
 Write-Host "Write Certificate to artifact directory "$artifact_dir
 
-copy "$artifact_dir/../MWLUSBDriver.cer" "$artifact_dir"
+copy "$artifact_dir/../MWLDXP50USBUMDF2Driver.cer" "$artifact_dir"
