@@ -61,7 +61,7 @@ jobs:
       working-directory:  ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: ./.github/externals/devbuild.ps1 ${{matrix.build_config}} ${{env.build_machine}} "${{env.SOLUTION_FILE_PATH}}" '${{ github.workspace }}\MWL USB Driver\${{env.build_machine}}\${{matrix.build_config}}\MWL USB Driver'
+      run: ./.github/externals/devbuild.ps1 ${{matrix.build_config}} ${{env.build_machine}} "${{env.SOLUTION_FILE_PATH}}" '${{ github.workspace }}\MWLDXP50USBUMDF2Driver\${{env.build_machine}}\${{matrix.build_config}}\MWLDXP50USBUMDF2Driver'
       shell: powershell
       
     - name: Upload Build
