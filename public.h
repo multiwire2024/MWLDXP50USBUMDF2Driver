@@ -307,17 +307,6 @@ typedef struct _VENDOR_REQUEST_IN
     BYTE    bData;
 } VENDOR_REQUEST_IN, *PVENDOR_REQUEST_IN;
 
-typedef struct _RING_BUFFER
-{
-   PUCHAR      inPtr;  
-   PUCHAR      outPtr; 
-   SIZE_T      totalSize;
-   SIZE_T      currentSize;
-   KSPIN_LOCK   spinLock;
-   PUCHAR      buffer; 
-} RING_BUFFER, *PRING_BUFFER;
-
-
 typedef struct _ANCHOR_DOWNLOAD_CONTROL 
 {
    WORD Offset;
@@ -378,39 +367,6 @@ typedef struct _VENDOR_OR_CLASS_REQUEST_CONTROL
    USHORT index;
 } VENDOR_OR_CLASS_REQUEST_CONTROL, *PVENDOR_OR_CLASS_REQUEST_CONTROL;
 
-
-typedef struct _ISO_TRANSFER_OBJECT ISO_TRANSFER_OBJECT, * PISO_TRANSFER_OBJECT;
-
-
-typedef struct _ISO_STREAM_OBJECT
-{
-   PDEVICE_OBJECT DeviceObject;
-   ULONG PacketSize;
-   ULONG NumPackets;
-   PUSBD_PIPE_INFORMATION PipeInfo;
-   PVOID TransferBuffer;
-   SIZE_T TransferBufferLength;
-   PVOID IsoDescriptorBuffer;
-   ULONG FramesPerBuffer;
-   ULONG BufferCount;
-   ULONG PendingTransfers;
-   PRING_BUFFER DataRingBuffer;
-   PRING_BUFFER DescriptorRingBuffer;
-   PISO_TRANSFER_OBJECT TransferObject;
-} ISO_STREAM_OBJECT, *PISO_STREAM_OBJECT;
-
-typedef struct _ISO_TRANSFER_OBJECT
-{
-    ULONG Frame;
-    PISO_STREAM_OBJECT StreamObject;
-    PURB Urb;
-    PIRP Irp;
-#ifdef WDF_KERNEL_MODE
-    KEVENT Done;
-#else
-    ULONG Done;
-#endif
-} ISO_TRANSFER_OBJECT, * PISO_TRANSFER_OBJECT;
 
 typedef struct _SET_FEATURE_CONTROL
 {

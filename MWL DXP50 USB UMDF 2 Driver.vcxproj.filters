@@ -19,9 +19,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <Inf Include="MWLDXP50USBUMDF2Driver.inf">
       <Filter>Driver Files</Filter>
     </Inf>
@@ -39,10 +36,10 @@
     <ClInclude Include="Queue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mwlusb\MWL USB Driver\private.h">
+    <ClInclude Include="private.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mwlusb\MWL USB Driver\Public.h">
+    <ClInclude Include="Public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -56,7 +53,7 @@
     <ClCompile Include="Queue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mwlusb\MWL USB Driver\ioctl.c">
+    <ClCompile Include="ioctl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -20,10 +20,7 @@ Environment:
 ULONG DebugLevel = 1;
 
 NTSTATUS
-DriverEntry(
-    _In_ PDRIVER_OBJECT  DriverObject,
-    _In_ PUNICODE_STRING RegistryPath
-    )
+DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING RegistryPath)
 /*++
 
 Routine Description:
@@ -50,51 +47,44 @@ Return Value:
 
 --*/
 {
-    WDF_DRIVER_CONFIG config;
-    NTSTATUS status;
-    WDF_OBJECT_ATTRIBUTES attributes;
+  WDF_DRIVER_CONFIG config;
+  NTSTATUS status;
+  WDF_OBJECT_ATTRIBUTES attributes;
 
-    //
-    // Initialize WPP Tracing
-    //
-    WPP_INIT_TRACING( DriverObject, RegistryPath );
+  //
+  // Initialize WPP Tracing
+  //
+  WPP_INIT_TRACING(DriverObject, RegistryPath);
 
-    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+  TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
-    //
-    // Register a cleanup callback so that we can call WPP_CLEANUP when
-    // the framework driver object is deleted during driver unload.
-    //
-    WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-    attributes.EvtCleanupCallback = MWLDXP50USBUMDF2DriverEvtDriverContextCleanup;
+  //
+  // Register a cleanup callback so that we can call WPP_CLEANUP when
+  // the framework driver object is deleted during driver unload.
+  //
+  WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
+  attributes.EvtCleanupCallback = MWLDXP50USBUMDF2DriverEvtDriverContextCleanup;
 
-    WDF_DRIVER_CONFIG_INIT(&config,
-                           MWLDXP50USBUMDF2DriverEvtDeviceAdd
-                           );
+  WDF_DRIVER_CONFIG_INIT(&config, MWLDXP50USBUMDF2DriverEvtDeviceAdd);
 
-    status = WdfDriverCreate(DriverObject,
-                             RegistryPath,
-                             &attributes,
-                             &config,
-                             WDF_NO_HANDLE
-                             );
+  status = WdfDriverCreate(DriverObject, RegistryPath, &attributes, &config,
+                           WDF_NO_HANDLE);
 
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, TRACE_DRIVER, "WdfDriverCreate failed %!STATUS!", status);
-        WPP_CLEANUP(DriverObject);
-        return status;
-    }
-
-    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
-
+  if (!NT_SUCCESS(status)) {
+    TraceEvents(TRACE_LEVEL_ERROR, TRACE_DRIVER,
+                "WdfDriverCreate failed %!STATUS!", status);
+    WPP_CLEANUP(DriverObject);
     return status;
+  }
+
+  TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
+
+  return status;
 }
 
 NTSTATUS
-MWLDXP50USBUMDF2DriverEvtDeviceAdd(
-    _In_    WDFDRIVER       Driver,
-    _Inout_ PWDFDEVICE_INIT DeviceInit
-    )
+MWLDXP50USBUMDF2DriverEvtDeviceAdd(_In_ WDFDRIVER Driver,
+                                   _Inout_ PWDFDEVICE_INIT DeviceInit)
 /*++
 Routine Description:
 
@@ -114,24 +104,21 @@ Return Value:
 
 --*/
 {
-    NTSTATUS status;
+  NTSTATUS status;
 
-    UNREFERENCED_PARAMETER(Driver);
-    
-    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+  UNREFERENCED_PARAMETER(Driver);
 
-    status = MWLDXP50USBUMDF2DriverCreateDevice(DeviceInit);
-    //
+  TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
-    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
+  status = MWLDXP50USBUMDF2DriverCreateDevice(DeviceInit);
+  //
 
-    return status;
+  TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
+
+  return status;
 }
 
-VOID
-MWLDXP50USBUMDF2DriverEvtDriverContextCleanup(
-    _In_ WDFOBJECT DriverObject
-    )
+VOID MWLDXP50USBUMDF2DriverEvtDriverContextCleanup(_In_ WDFOBJECT DriverObject)
 /*++
 Routine Description:
 
@@ -147,13 +134,12 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER(DriverObject);
+  UNREFERENCED_PARAMETER(DriverObject);
 
-    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+  TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
-    //
-    // Stop WPP Tracing
-    //
-    WPP_CLEANUP( WdfDriverWdmGetDriverObject( (WDFDRIVER) DriverObject) );
-
+  //
+  // Stop WPP Tracing
+  //
+  WPP_CLEANUP(WdfDriverWdmGetDriverObject((WDFDRIVER)DriverObject));
 }

@@ -35,17 +35,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\mwlusb\MWL USB Driver\ioctl.c" />
     <ClCompile Include="Device.c" />
     <ClCompile Include="Driver.c" />
+    <ClCompile Include="ioctl.c" />
     <ClCompile Include="Queue.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\mwlusb\MWL USB Driver\private.h" />
-    <ClInclude Include="..\mwlusb\MWL USB Driver\Public.h" />
+    <ClInclude Include="private.h" />
+    <ClInclude Include="Public.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Driver.h" />
     <ClInclude Include="Trace.h" />

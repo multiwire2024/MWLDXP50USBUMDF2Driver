@@ -15,35 +15,24 @@ Environment:
 --*/
 
 #include "public.h"
+#include "private.h"
 
 EXTERN_C_START
 
 typedef struct _DEVICE_CONTEXT {
-
     USB_DEVICE_DESCRIPTOR           UsbDeviceDescriptor;
-
     PUSB_CONFIGURATION_DESCRIPTOR   UsbConfigurationDescriptor;
-
     WDFUSBDEVICE                    WdfUsbTargetDevice;
-
+    WDFWAITLOCK                     ResetDeviceWaitLock;
     ULONG                           WaitWakeEnable;
-
     BOOLEAN                         IsDeviceHighSpeed;
-
     BOOLEAN                         IsDeviceSuperSpeed;
-
     WDFUSBINTERFACE                 UsbInterface;
-
     UCHAR                           SelectedAlternateSetting;
-
     UCHAR                           NumberConfiguredPipes;
-
     ULONG                           MaximumTransferSize;
-
     BOOLEAN                         IsStaticStreamsSupported;
-
     USHORT                          NumberOfStreamsSupportedByController;
-
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext)
@@ -316,7 +305,9 @@ NTSTATUS
 MWLUsb_VendorRequest(
     _In_ WDFDEVICE device,
     _In_ PVENDOR_REQUEST_IN pVendorRequest,
-    _In_ size_t bufferLength,
+    _In_ size_t inBufLength,
+    _In_ PVOID outLength,
+    _In_ size_t outBufferLength,
     _Out_ size_t *outbufferLength
     );
 
@@ -333,25 +324,29 @@ MWLUsb_VendorClassRequest(
 );
 
 NTSTATUS
-Ezusb_ResetPipe(
+MWLDXP50USBUMDF2Driver_ResetPipe(
    IN WDFDEVICE device,
+   IN WDFREQUEST Request,
    ULONG PipeNum
    );
 
 NTSTATUS
-Ezusb_AbortPipe(
+MWLDXP50USBUMDF2Driver_AbortPipe(
     IN WDFDEVICE device,
-    IN USBD_PIPE_HANDLE PipeHandle
+    IN WDFREQUEST Request,
+    IN ULONG PipeNum
     );
 
 ULONG
-Ezusb_GetCurrentFrameNumber(
-    IN WDFDEVICE device
+MWLDXP50USBUMDF2Driver_GetCurrentFrameNumber(
+    IN WDFDEVICE device,
+    IN WDFREQUEST Request
     );
 
 NTSTATUS
-Ezusb_ResetParentPort(
-    IN WDFDEVICE device
+MWLDXP50USBUMDF2Driver_ResetDevice(
+    IN WDFDEVICE device,
+    IN WDFREQUEST Request
     );
 
 ULONG
@@ -365,37 +360,6 @@ GetConfigDescriptor(
     IN WDFDEVICE device
     );
 
-
-BOOLEAN LockDevice(
-    IN WDFDEVICE device
-   );
-
-NTSTATUS IsoTransferComplete(
-   IN WDFDEVICE device,
-   IN PIRP Irp,
-   IN PVOID Context
-   );
-
-NTSTATUS Ezusb_StartIsoTransfer(
-   IN WDFDEVICE device,
-   IN PIRP Irp
-   );
-
-NTSTATUS IsoStreamTransferComplete(
-   IN WDFDEVICE device,
-   IN PIRP Irp,
-   IN PVOID Context
-   );
-
-NTSTATUS Ezusb_StartIsoStream(
-   IN WDFDEVICE device,
-   IN PIRP Irp
-   );
-
-NTSTATUS InitTransferObject(
-   IN OUT PISO_STREAM_OBJECT streamObject,
-   IN ULONG index
-   );
 
 NTSTATUS Ezusb_8051Reset(
    IN WDFDEVICE device,

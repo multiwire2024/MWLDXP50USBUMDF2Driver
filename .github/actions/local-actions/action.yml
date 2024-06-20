@@ -1,0 +1,62 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Build CyUSB
+description: 'Runs the multistep cyusb process'
+inputs:
+  name:
+    required: false
+    description: "Name"
+  work_dir:
+    required: false
+    description: "working dir for the build steps"
+    default: "./"
+  build_config:
+    required: false
+    description: "Configuration to build"
+    default: "Debug"
+  build_machine:
+     required: false
+     description: "arch to build"
+     default: "x86"
+  sln_path:
+     required: false
+     description: "filepath for the solution. Can be folder or file"
+     default: "./"
+
+outputs:
+  success:
+    description: "Did the build succeed"
+    value: ${{ steps.step1.outputs.success }}
+
+runs-on: windows-latest
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    
+    - name: parameter values
+      run: dir ${{inputs.work_dir}}
+      shell: powershell
+      
+    - name: Add MSBuild to PATH
+      uses: yakman2020/setup-msbuild@main
+
+#    - name: Add WDK env variables
+ #     run: c:\"Program Files"\"Microsoft Visual Studio"\2022\Enterprise\Common7\Tools\VsDevCmd.bat -arch=amd64 -host_arch=amd64 -winsdk=10.0.19041.0
+  #    shell: cmd
+
+    - name: env
+      working-directory: ${{inputs.work_dir}}
+      run: dir
+      shell: cmd 
+      
+    - name: Build 
+      working-directory: ${{inputs.work_dir}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      #run: msbuild /m /p:Configuration=${{inputs.build_config}} /p:Machine=${{inputs.build_machine}} ${{inputs.sln_path}}
+      run: ../.github/externals/devbuild.bat ${{inputs.build_config}} ${{inputs.build_machine}} ${{inputs.sln_path}}
+      shell: powershell
