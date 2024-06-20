@@ -6,6 +6,8 @@ param (
 )
 Write-Host "Artifact Directory = $artifact_dir"
 
+$signing_cert="$artifact_dir/../MWLDXP50USBUMDF2Driver.cer"
+
 $Preferred_VS_Version=2019
 
 try {
@@ -116,11 +118,17 @@ $env:WT_SESSION="1b6be7de-2669-4c05-87c0-0165adfef6bd"
 $env:ZES_ENABLE_SYSMAN=1
 $env:PATH="$env:PATH;${vs_root}\msbuild\current\bin\amd64"
 
+
 (gci -recurse env:) | foreach-object { Write-Host  ([string]::Format('{0}={1}', ($_.name), $_.value)) >>$env_file }
 
 Write-Host "$vs_root $Solution $config $arch"
 &"$vs_root\MSBuild\Current\bin\amd64\msbuild.exe" /m -p:Configuration=$config -p:Platform=$arch $solution
 
-Write-Host "Write Certificate to artifact directory "$artifact_dir
-
-copy "$artifact_dir/../MWLDXP50USBUMDF2Driver.cer" "$artifact_dir"
+Write-Host "Write Certificate to artifact directory "$artifact_dir if exists
+if ([System.IO.File]::Exists($signing_cert)) {
+    copy $signing_cert "$artifact_dir"
+}
+else {
+    # For release signing we don't sign and don't declare a certificate .It must be done manually"
+    Write-Host "signing cert $signing_cert not found, skipping"
+}
