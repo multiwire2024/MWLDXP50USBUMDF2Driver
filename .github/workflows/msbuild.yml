@@ -33,7 +33,7 @@ jobs:
 
     strategy:
       matrix:
-        build_config: [ Debug ]
+        build_config: [ Debug, Release ]
 
     steps:
     - uses: actions/checkout@v4
