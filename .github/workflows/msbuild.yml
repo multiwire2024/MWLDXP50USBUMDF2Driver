@@ -33,7 +33,7 @@ jobs:
 
     strategy:
       matrix:
-        build_config: [ Debug, Release ]
+        build_config: [ Debug ]
 
     steps:
     - uses: actions/checkout@v4
@@ -62,13 +62,13 @@ jobs:
       working-directory:  ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: ./.github/externals/devbuild.ps1 ${{matrix.build_config}} ${{env.build_machine}} "${{env.SOLUTION_FILE_PATH}}" '${{ github.workspace }}\MWLDXP50USBUMDF2Driver\${{env.build_machine}}\${{matrix.build_config}}\MWLDXP50USBUMDF2Driver'
+      run: ./.github/externals/devbuild.ps1 ${{matrix.build_config}} ${{env.build_machine}} "${{env.SOLUTION_FILE_PATH}}" '${{ github.workspace }}\MWLDXP50USBUMDF2Driver\${{env.build_machine}}\${{matrix.build_config}}\MWL DXP50 USB UMDF 2D Driver'
       shell: powershell
       
     - name: Upload Build
       uses: actions/upload-artifact@v4
       with:
           name: MWLUSB-Windows-${{env.build_machine}}-${{env.build_config}}
-          path: ${{ github.workspace }}\MWLDXP50USBUMDF2Driver\${{env.build_machine}}\${{matrix.build_config}}\MWLDXP50USBUMDF2Driver
+          path: ${{ github.workspace }}\MWLDXP50USBUMDF2Driver\${{env.build_machine}}\${{matrix.build_config}}\MWL DXP50 USB UMDF 2 Driver
           overwrite: true
       
