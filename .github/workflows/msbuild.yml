@@ -1,0 +1,74 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: MSBuild
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: 
+    branches: [ "main" ]
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: './MWL USB Driver/MWL USB Driver.sln'
+  CYUSB_SOLUTION_PATH: ./library/cpp/CyAPI.sln
+  build_machine: x64
+  NUGETEXETOOLPATH: 'c:\"Program Files"\Nuget\Nuget.exe'
+
+  # Configuration type to build.
+  # You can convert this to a build matrix if you need coverage of multiple configuration types.
+  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    strategy:
+      matrix:
+        build_config: [ Debug, Release ]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+         submodules: true  
+    - name: Look around
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run:  powershell "gci env:"
+      
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: ${{env.NUGETEXETOOLPATH}} restore "${{env.SOLUTION_FILE_PATH}}"
+
+    - name: Say hi!
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: dir 'C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0'
+      
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+      
+    - name: Save Env
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run:  powershell ./.github/externals/set-env.ps1 >.env
+      
+    - name: Build mwlusb
+      working-directory:  ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: ./.github/externals/devbuild.ps1 ${{matrix.build_config}} ${{env.build_machine}} "${{env.SOLUTION_FILE_PATH}}" '${{ github.workspace }}\MWL USB Driver\${{env.build_machine}}\${{matrix.build_config}}\MWL USB Driver'
+      shell: powershell
+      
+    - name: Upload Build
+      uses: actions/upload-artifact@v4
+      with:
+          name: MWLUSB-Windows-${{env.build_machine}}-${{env.build_config}}
+          path: ${{ github.workspace }}\MWL USB Driver\${{env.build_machine}}\${{matrix.build_config}}\MWL USB Driver
+          overwrite: true
+      
