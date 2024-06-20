@@ -15,6 +15,7 @@ env:
   # Path to the solution file relative to the root of the project.
   SOLUTION_FILE_PATH: .
   NUGETEXETOOLPATH: c:\"Program Files"\nuget\nuget.exe  
+  build_machine: x64
 
 
   # Configuration type to build.

@@ -181,6 +181,9 @@
     <DriverSign>
       <AdditionalOptions>/fd SHA256 %(AdditionalOptions)</AdditionalOptions>
     </DriverSign>
+    <PostBuildEvent>
+      <Command>copy "$(OutDir)$(TargetName).pdb" "$(Inf2CatSource)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
