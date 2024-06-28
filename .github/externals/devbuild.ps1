@@ -124,7 +124,7 @@ $env:PATH="$env:PATH;${vs_root}\msbuild\current\bin\amd64"
 Write-Host "$vs_root $Solution $config $arch"
 &"$vs_root\MSBuild\Current\bin\amd64\msbuild.exe" /m -p:Configuration=$config -p:Platform=$arch $solution
 
-Write-Host "Write Certificate to artifact directory "$artifact_dir if exists
+Write-Host "Write Certificate $signing_cert to artifact directory $artifact_dir if exists"
 if ([System.IO.File]::Exists($signing_cert)) {
     copy $signing_cert "$artifact_dir"
 }
