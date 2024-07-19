@@ -40,8 +40,6 @@ Return Value:
 {
   WDFDEVICE device = WdfIoQueueGetDevice(Queue);
   PDEVICE_CONTEXT pDevContext = GetDeviceContext(device);
-  PVOID ioBuffer = NULL;
-  size_t bufLength;
   NTSTATUS status = STATUS_INVALID_DEVICE_REQUEST;
 
   ULONG length = 0;
@@ -88,16 +86,19 @@ Return Value:
     }
   } break;
 
-  case IOCTL_MWLUSB_RESET_PIPE:
+  case IOCTL_MWLUSB_RESET_PIPE: {
+    PVOID inBuffer = NULL;
+    size_t inLength = 0;
 
     MWLUsb_DbgPrint(1, ("MWLUsb Reset Pipe\n"));
     status =
-        WdfRequestRetrieveInputBuffer(Request, length, &ioBuffer, &bufLength);
+        WdfRequestRetrieveInputBuffer(Request, length, &inBuffer, &inLength);
     if (!NT_SUCCESS(status)) {
       MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
       break;
     }
-    break;
+
+  } break;
 
   case IOCTL_MWLUSB_RESET_DEVICE:
     MWLUsb_DbgPrint(1, ("MWLUsb Reset Device\n"));
@@ -105,29 +106,30 @@ Return Value:
     length = 0;
     break;
 
-  case IOCTL_EZUSB_VENDOR_REQUEST: 
-  {
-      PVOID inBuffer = NULL;
-      size_t inLength = 0;
-      PVOID outBuffer = NULL;
-      size_t outLength = 0;
-      MWLUsb_DbgPrint(1, ("Ezusb Vendor Request\n"));
-      status = WdfRequestRetrieveInputBuffer(Request, length, &inBuffer, &inLength);
-      if (!NT_SUCCESS(status)) {
-          MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
-          break;
-      }
-      status =
-          WdfRequestRetrieveOutputBuffer(Request, length, &outBuffer, &outLength);
-      if (!NT_SUCCESS(status)) {
-          MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
-          break;
-      }
-      status = MWLUsb_VendorRequest(device, (PVENDOR_REQUEST_IN)inBuffer,
-          inLength, outBuffer, outLength, &inLength);
+  case IOCTL_EZUSB_VENDOR_REQUEST: {
+    PVOID inBuffer = NULL;
+    size_t inLength = 0;
+    PVOID outBuffer = NULL;
+    size_t outLength = 0;
 
-      MWLUsb_DbgPrint(1, ("Vendor Request returned %d bytes\n", length));
+    MWLUsb_DbgPrint(1, ("Ezusb Vendor Request\n"));
+    status =
+        WdfRequestRetrieveInputBuffer(Request, length, &inBuffer, &inLength);
+    if (!NT_SUCCESS(status)) {
+      MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
       break;
+    }
+    status =
+        WdfRequestRetrieveOutputBuffer(Request, length, &outBuffer, &outLength);
+    if (!NT_SUCCESS(status)) {
+      MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
+      break;
+    }
+    status = MWLUsb_VendorRequest(device, (PVENDOR_REQUEST_IN)inBuffer,
+                                  inLength, outBuffer, outLength, &inLength);
+
+    MWLUsb_DbgPrint(1, ("Vendor Request returned %d bytes\n", length));
+    break;
   }
 
   case IOCTL_EZUSB_ANCHOR_DOWNLOAD: {
@@ -220,7 +222,6 @@ Return Value:
   case IOCTL_EZUSB_RESETPIPE: {
     VOID *inBuffer = NULL;
     size_t inLength = 0;
-    length = 0;
 
     MWLUsb_DbgPrint(1, ("Ezusb Reset Pipe\n"));
     status =
@@ -244,7 +245,6 @@ Return Value:
   case IOCTL_EZUSB_ABORTPIPE: {
     VOID *inBuffer = NULL;
     size_t inLength = 0;
-    length = 0;
 
     MWLUsb_DbgPrint(1, ("Ezusb Abort Pipe\n"));
     status =
@@ -292,7 +292,10 @@ Return Value:
     MWLUsb_DbgPrint(1, ("Ezusb Get Pipe Info\n"));
     break;
 
-  case IOCTL_EZUSB_GET_DEVICE_DESCRIPTOR:
+  case IOCTL_EZUSB_GET_DEVICE_DESCRIPTOR: {
+    VOID *outBuffer = NULL;
+    size_t outLength = 0;
+
     //
     // inputs  - pointer to a buffer in which to place descriptor data
     // outputs - we put the device descriptor data, if any is returned by the
@@ -304,14 +307,14 @@ Return Value:
     if (pDevContext) {
 
       length = pDevContext->UsbDeviceDescriptor.bLength;
-      status = WdfRequestRetrieveOutputBuffer(Request, length, &ioBuffer,
-                                              &bufLength);
+      status = WdfRequestRetrieveOutputBuffer(Request, length, &outBuffer,
+                                              &outLength);
       if (!NT_SUCCESS(status)) {
         MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
         break;
       }
 
-      RtlCopyMemory(ioBuffer, &pDevContext->UsbDeviceDescriptor, length);
+      RtlCopyMemory(outBuffer, &pDevContext->UsbDeviceDescriptor, outLength);
 
       status = STATUS_SUCCESS;
     } else {
@@ -319,7 +322,7 @@ Return Value:
     }
     MWLUsb_DbgPrint(1, ("Get Device Descriptor returned %d bytes\n", length));
 
-    break;
+  } break;
 
   case IOCTL_EZUSB_GET_STRING_DESCRIPTOR: {
 
@@ -330,7 +333,10 @@ Return Value:
     size_t outBufLength = 0;
     size_t inBufLength = 0;
     WDF_USB_CONTROL_SETUP_PACKET cntl = {0};
-    WDF_MEMORY_DESCRIPTOR mem = {0};
+    WDF_MEMORY_DESCRIPTOR mem_desc = {0};
+    BYTE *transfer_buffer = NULL;
+    WDFMEMORY transfer_mem = NULL;
+
     status = WdfRequestRetrieveOutputBuffer(
         Request, sizeof(USB_STRING_DESCRIPTOR), &outputBuffer, &outBufLength);
     if (!NT_SUCCESS(status)) {
@@ -356,20 +362,31 @@ Return Value:
     cntl.Packet.wIndex.Value = pcontrol->LanguageId;
     cntl.Packet.wLength = 255;
 
-#ifdef WDF_KERNEL_MODE
-    BYTE *transfer_buffer = ExAllocatePool2(
-        POOL_FLAG_NON_PAGED, pDevContext->MaximumTransferSize, 'MWLU');
-#else
-    BYTE *transfer_buffer = malloc(pDevContext->MaximumTransferSize);
-#endif
-    mem.Type = WdfMemoryDescriptorTypeBuffer;
-    mem.u.BufferType.Buffer = transfer_buffer;
-    mem.u.BufferType.Length = (ULONG)256;
+
+    status = WdfMemoryCreate(
+               /*[in, optional]  PWDF_OBJECT_ATTRIBUTES */ NULL,
+               /* [in]            POOL_TYPE             */ NonPagedPool,
+               /* [in, optional]  ULONG                 */ 'MWLU',
+               /* [in]            size_t                */ 512,
+               /* [out]           WDFMEMORY             */ &transfer_mem,
+               /* [out, optional] PVOID                 */ &transfer_buffer);
+    if (!NT_SUCCESS(status)) {
+      MWLUsb_DbgPrint(
+          1,
+          ("GET_STRING_DESC: WdfMemoryCreate "
+           "failed status=0x%x\n",
+           status));
+      break;
+    }
+
+    mem_desc.Type = WdfMemoryDescriptorTypeBuffer;
+    mem_desc.u.BufferType.Buffer = transfer_buffer;
+    mem_desc.u.BufferType.Length = (ULONG)512;
 
     ULONG transfer_bytes = 0;
     RtlZeroMemory(transfer_buffer, pDevContext->MaximumTransferSize);
     status = WdfUsbTargetDeviceSendControlTransferSynchronously(
-        pDevContext->WdfUsbTargetDevice, Request, NULL, &cntl, &mem,
+        pDevContext->WdfUsbTargetDevice, Request, NULL, &cntl, &mem_desc,
         &transfer_bytes);
     if (!NT_SUCCESS(status)) {
       MWLUsb_DbgPrint(
@@ -377,11 +394,6 @@ Return Value:
           ("GET_STRING_DESC: WdUsbTargetDeviceSendControlTransferSynchronously "
            "failed status=0x%x\n",
            status));
-#ifdef WDF_KERNEL_MODE
-      ExFreePoolWithTag(transfer_buffer, 'MWLU');
-#else
-      free(transfer_buffer);
-#endif
       break;
     }
 
@@ -396,15 +408,11 @@ Return Value:
         ("GET_STRING_DESC: WdUsbTargetDeviceSendControlTransferSynchronously "
          "returns bDescriptorType = %x bLength = %x\n",
          rtn_desc->bDescriptorType, rtn_desc->bLength));
-#ifdef WDF_KERNEL_MODE
-    ExFreePoolWithTag(transfer_buffer, 'MWLU');
-#else
-    free(transfer_buffer);
-#endif
-
   } break;
 
-  case IOCTL_EZUSB_GET_CONFIGURATION_DESCRIPTOR:
+  case IOCTL_EZUSB_GET_CONFIGURATION_DESCRIPTOR: {
+    void *outBuffer = NULL;
+    size_t outLength = 0;
     //
     // inputs  - pointer to a buffer in which to place descriptor data
     // outputs - we put the configuration descriptor data, if any is returned by
@@ -419,21 +427,21 @@ Return Value:
 
       length = pDevContext->UsbConfigurationDescriptor->wTotalLength;
 
-      status = WdfRequestRetrieveOutputBuffer(Request, length, &ioBuffer,
-                                              &bufLength);
+      status = WdfRequestRetrieveOutputBuffer(Request, length, &outBuffer,
+                                              &outLength);
       if (!NT_SUCCESS(status)) {
         MWLUsb_DbgPrint(1, ("WdfRequestRetrieveInputBuffer failed\n"));
         break;
       }
 
-      RtlCopyMemory(ioBuffer, pDevContext->UsbConfigurationDescriptor, length);
+      RtlCopyMemory(outBuffer, pDevContext->UsbConfigurationDescriptor, outLength);
 
       status = STATUS_SUCCESS;
     } else {
       status = STATUS_INVALID_DEVICE_STATE;
     }
 
-    break;
+  } break;
 
   case IOCTL_EZUSB_SETINTERFACE: {
     MWLUsb_DbgPrint(1, ("Ezusb Set Interface\n"));
@@ -577,29 +585,51 @@ Return Value:
     if ((WdfUsbPipeTypeBulk == pipeInfo.PipeType) ||
         (WdfUsbPipeTypeInterrupt == pipeInfo.PipeType)) {
 
-#ifdef WDF_KERNEL_MODE
-      BYTE *transfer_buffer =
-          ExAllocatePool2(POOL_FLAG_NON_PAGED, outLength, 'MWLU');
-      ULONG packet_size = pipeInfo.MaximumPacketSize;
-      BYTE *packet_buffer = ExAllocatePool2(
-          POOL_FLAG_NON_PAGED, packet_size,
-          'MWLU'); // needs to be the maxpacket size from the endpoint desc
-#else
-      BYTE *transfer_buffer = malloc(0x10000); // max transfer for usb 2
-      ULONG packet_size = pipeInfo.MaximumPacketSize;
-      BYTE *packet_buffer = malloc(
-          0x10000); // needs to be the maxpacket size from the endpoint desc
-#endif
-      WDF_MEMORY_DESCRIPTOR buffer_desc = {0};
-      buffer_desc.Type = WdfMemoryDescriptorTypeBuffer;
-      buffer_desc.u.BufferType.Buffer = packet_buffer;
-      buffer_desc.u.BufferType.Length = packet_size;
+    BYTE *transfer_buffer = NULL;
+    WDFMEMORY transfer_mem = NULL;
+    status = WdfMemoryCreate(
+               /*[in, optional]  PWDF_OBJECT_ATTRIBUTES */ NULL,
+               /* [in]            POOL_TYPE             */ NonPagedPool,
+               /* [in, optional]  ULONG                 */ 'MWLU',
+               /* [in]            size_t                */ 0x10000,
+               /* [out]           WDFMEMORY             */ &transfer_mem,
+               /* [out, optional] PVOID                 */ &transfer_buffer);
+    if (!NT_SUCCESS(status)) {
+      MWLUsb_DbgPrint(
+          1,
+          ("Bulk Read: WdfMemoryCreate transfer buffer " "failed status=0x%x\n",
+           status));
+      break;
+    }
 
-      ULONG to_go = (ULONG)outLength;
-      ULONG transfer_length = 0;
-      length = 0;
+    ULONG packet_size = pipeInfo.MaximumPacketSize;
+    BYTE *packet_buffer = NULL;
+    WDFMEMORY packet_mem = NULL;
+    status = WdfMemoryCreate(
+               /*[in, optional]  PWDF_OBJECT_ATTRIBUTES */ NULL,
+               /* [in]            POOL_TYPE             */ NonPagedPool,
+               /* [in, optional]  ULONG                 */ 'MWLU',
+               /* [in]            size_t                */ packet_size,
+               /* [out]           WDFMEMORY             */ &packet_mem,
+               /* [out, optional] PVOID                 */ &packet_buffer);
+    if (!NT_SUCCESS(status)) {
+      MWLUsb_DbgPrint(
+          1,
+          ("Bulk Read: WdfMemoryCreate packet buffer " "failed status=0x%x\n",
+           status));
+      break;
+    }
 
-      do {
+    WDF_MEMORY_DESCRIPTOR buffer_desc = {0};
+    buffer_desc.Type = WdfMemoryDescriptorTypeBuffer;
+    buffer_desc.u.BufferType.Buffer = packet_buffer;
+    buffer_desc.u.BufferType.Length = packet_size;
+
+    ULONG to_go = (ULONG)outLength;
+    ULONG transfer_length = 0;
+    length = 0;
+
+    do {
         transfer_length = 0;
         status = WdfUsbTargetPipeReadSynchronously(
             pipe, Request, (PWDF_REQUEST_SEND_OPTIONS)NULL, &buffer_desc,
@@ -625,13 +655,6 @@ Return Value:
           RtlCopyMemory(outBuffer, transfer_buffer,
                         length > outLength ? outLength : length);
         }
-#ifdef WDF_KERNEL_MODE
-        ExFreePoolWithTag(transfer_buffer, 'MWLU');
-        free(packet_buffer);
-#else
-        free(transfer_buffer);
-        free(packet_buffer);
-#endif
         break;
       }
       MWLUsb_DbgPrint(
@@ -640,12 +663,7 @@ Return Value:
 
       RtlCopyMemory(outBuffer, transfer_buffer,
                     length > outLength ? outLength : length);
-#ifdef WDF_KERNEL_MODE
-      ExFreePoolWithTag(transfer_buffer, 'MWLU');
-#else
-      free(transfer_buffer);
-      free(packet_buffer);
-#endif
+
       MWLUsb_DbgPrint(1, ("Bulk Read returned %d bytes\n", length));
     } else {
       status = STATUS_INVALID_DEVICE_STATE;
@@ -811,6 +829,7 @@ MWLUsb_VendorClassRequest(_In_ WDFDEVICE device, _In_ WDFREQUEST Request,
 
   UNREFERENCED_PARAMETER(outBuffer);
   UNREFERENCED_PARAMETER(inBufferLength);
+  ULONG length = 0;
 
   MWLUsb_DbgPrint(1, ("Ezusb Vendor Class Request\n"));
   DoTraceMessage(MWLDXP50USBUMDF2Driver_ALL_INFO,
@@ -823,18 +842,28 @@ MWLUsb_VendorClassRequest(_In_ WDFDEVICE device, _In_ WDFREQUEST Request,
   cntl.Packet.wValue.Value = pRequestControl->value;
   cntl.Packet.wLength = sizeof(cntl);
 
-#ifdef WDF_KERNEL_MODE
-  BYTE *transfer_buffer = ExAllocatePool2(
-      POOL_FLAG_NON_PAGED, pDevContext->MaximumTransferSize, 'MWLU');
-#else
-  BYTE *transfer_buffer = malloc(pDevContext->MaximumTransferSize);
-#endif
+  BYTE *transfer_buffer = NULL;
+  WDFMEMORY transfer_mem = NULL;
+  ntStatus = WdfMemoryCreate(
+               /*[in, optional]  PWDF_OBJECT_ATTRIBUTES */ NULL,
+               /* [in]            POOL_TYPE             */ NonPagedPool,
+               /* [in, optional]  ULONG                 */ 'MWLU',
+               /* [in]            size_t                */ 0x10000,
+               /* [out]           WDFMEMORY             */ &transfer_mem,
+               /* [out, optional] PVOID                 */ &transfer_buffer);
+  if (!NT_SUCCESS(ntStatus)) {
+      MWLUsb_DbgPrint(
+          1,
+          ("Vendor CLass Request: WdfMemoryCreate transfer buffer " "failed status=0x%x\n",
+           ntStatus));
+    return ntStatus;
+  }
+
   mem.Type = WdfMemoryDescriptorTypeBuffer;
   mem.u.BufferType.Buffer = transfer_buffer;
   mem.u.BufferType.Length = (ULONG)512;
 
   ULONG transfer_bytes = 0;
-  ULONG length = 0;
   RtlZeroMemory(transfer_buffer, pDevContext->MaximumTransferSize);
   ntStatus = WdfUsbTargetDeviceSendControlTransferSynchronously(
       pDevContext->WdfUsbTargetDevice, Request, NULL, &cntl, &mem,
@@ -1089,7 +1118,8 @@ Return Value:
   UNREFERENCED_PARAMETER(device);
   UNREFERENCED_PARAMETER(Request);
   MWLUsb_DbgPrint(1, ("MWLDXP50USBUMDF2Driver: enter Ezusb_ResetPort\n"));
-  MWLUsb_DbgPrint(1, ("MWLDXP50USBUMDF2Driver: Ezusb_ResetPort (%x)\n", status));
+  MWLUsb_DbgPrint(1,
+                  ("MWLDXP50USBUMDF2Driver: Ezusb_ResetPort (%x)\n", status));
 
   return status;
 }
@@ -1897,8 +1927,6 @@ NTSTATUS Ezusb_StartIsoTransfer(
    //
    // free the stream and transfer objects
    //
-   ExFreePool(streamObject->TransferObject);
-   ExFreePool(streamObject);
 
    return STATUS_SUCCESS;
 }
