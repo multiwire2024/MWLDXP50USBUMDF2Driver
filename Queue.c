@@ -19,7 +19,7 @@ Environment:
 #include "queue.tmh"
 
 NTSTATUS
-MWLDXP50USBUMDF2DriverQueueInitialize(_In_ WDFDEVICE Device)
+MWLDXP50USBUMDF2DriverQueueInitialize (_In_ WDFDEVICE Device)
 /*++
 
 Routine Description:
@@ -42,8 +42,8 @@ Return Value:
 
 --*/
 {
-  WDFQUEUE queue;
-  NTSTATUS status;
+  WDFQUEUE            queue;
+  NTSTATUS            status;
   WDF_IO_QUEUE_CONFIG queueConfig;
 
   //
@@ -51,20 +51,21 @@ Return Value:
   // configure-fowarded using WdfDeviceConfigureRequestDispatching to goto
   // other queues get dispatched here.
   //
-  WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queueConfig,
-                                         WdfIoQueueDispatchParallel);
+  WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE (&queueConfig,
+                                          WdfIoQueueDispatchParallel);
 
   queueConfig.EvtIoDeviceControl = MWLDXP50USBUMDF2DriverEvtIoDeviceControl;
-  queueConfig.EvtIoStop = MWLDXP50USBUMDF2DriverEvtIoStop;
+  queueConfig.EvtIoStop          = MWLDXP50USBUMDF2DriverEvtIoStop;
 
-  status =
-      WdfIoQueueCreate(Device, &queueConfig, WDF_NO_OBJECT_ATTRIBUTES, &queue);
+  status = WdfIoQueueCreate (Device, &queueConfig, WDF_NO_OBJECT_ATTRIBUTES,
+                             &queue);
 
-  if (!NT_SUCCESS(status)) {
-    TraceEvents(TRACE_LEVEL_ERROR, TRACE_QUEUE,
-                "WdfIoQueueCreate failed %!STATUS!", status);
-    return status;
-  }
+  if (!NT_SUCCESS (status))
+    {
+      TraceEvents (TRACE_LEVEL_ERROR, TRACE_QUEUE,
+                   "WdfIoQueueCreate failed %!STATUS!", status);
+      return status;
+    }
 
   return status;
 }
@@ -114,15 +115,15 @@ Return Value:
 }
 #endif
 
-VOID MWLDXP50USBUMDF2DriverEvtIoStop(_In_ WDFQUEUE Queue,
-                                     _In_ WDFREQUEST Request,
-                                     _In_ ULONG ActionFlags)
+VOID
+MWLDXP50USBUMDF2DriverEvtIoStop (_In_ WDFQUEUE Queue, _In_ WDFREQUEST Request,
+                                 _In_ ULONG ActionFlags)
 /*++
 
 Routine Description:
 
-    This event is invoked for a power-managed queue before the device leaves the
-working state (D0).
+    This event is invoked for a power-managed queue before the device leaves
+the working state (D0).
 
 Arguments:
 
@@ -141,9 +142,9 @@ Return Value:
 
 --*/
 {
-  TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_QUEUE,
-              "%!FUNC! Queue 0x%p, Request 0x%p ActionFlags %d", Queue, Request,
-              ActionFlags);
+  TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_QUEUE,
+               "%!FUNC! Queue 0x%p, Request 0x%p ActionFlags %d", Queue,
+               Request, ActionFlags);
 
   //
   // In most cases, the EvtIoStop callback function completes, cancels, or
@@ -171,8 +172,8 @@ Return Value:
   //
   // A driver might choose to take no action in EvtIoStop for requests that are
   // guaranteed to complete in a small amount of time. For example, the driver
-  // might take no action for requests that are completed in one of the driver’s
-  // request handlers.
+  // might take no action for requests that are completed in one of the
+  // driver’s request handlers.
   //
 
   return;
