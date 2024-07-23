@@ -74,7 +74,7 @@ Return Value:
     DoTraceMessage (MWLDXP50USBUMDF2Driver_ALL_INFO,
                     "Entered MWLUsb_DispatchDevCtrl control code = %x\n",
                     IoControlCode);
-    MWLUsb_DbgPrint (1, ("Entered MWLUsb_DispatchDevCtrl control code = %x\n",
+    MWLUsb_DbgPrint (3, ("Entered MWLUsb_DispatchDevCtrl control code = %x\n",
                          IoControlCode));
 
 #ifdef WDF_KERNEL_MODE
@@ -816,7 +816,7 @@ Return Value:
 
     case IOCTL_EZUSB_SET_FEATURE:
 
-        MWLUsb_DbgPrint (1, ("Ezusb Set Feature\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Set Feature\n"));
 #if 0
       {
          //
@@ -838,7 +838,7 @@ Return Value:
     default:
         status = STATUS_INVALID_DEVICE_REQUEST;
         MWLUsb_DbgPrint (
-            1, ("Exit MWLUsb_DispatchDevCtrl: Unsupported Ioctl code: %d\n",
+            1, ("Exit MWLUsb_DispatchDevCtrl: Unsupported Ioctl code: %x\n",
                 IoControlCode));
         break;
     }
@@ -873,7 +873,7 @@ MWLUsb_VendorClassRequest (IN WDFDEVICE device,
     UNREFERENCED_PARAMETER (inBufferLength);
     ULONG length = 0;
 
-    MWLUsb_DbgPrint (1, ("Ezusb Vendor Class Request\n"));
+    MWLUsb_DbgPrint (3, ("Ezusb Vendor Class Request\n"));
     DoTraceMessage (MWLDXP50USBUMDF2Driver_ALL_INFO,
                     "Ezusb Vendor or Class Request. \n");
     cntl.Packet.bm.Request.Dir       = pRequestControl->direction;
@@ -983,7 +983,7 @@ MWLDXP50USBUMDF2Driver_ResetPipe (IN WDFDEVICE device, IN WDFREQUEST Request,
     WDFUSBPIPE pipe = WdfUsbInterfaceGetConfiguredPipe (
         pDevContext->UsbInterface, (BYTE)pipeNum, NULL);
 
-    MWLUsb_DbgPrint (1,
+    MWLUsb_DbgPrint (3,
                      ("Reset pipe, pipehandle %x index %d\n", pipe, pipeNum));
 
     if (pipe == NULL) {
@@ -1025,7 +1025,7 @@ Return Value:
     WDFUSBPIPE pipe = WdfUsbInterfaceGetConfiguredPipe (
         pDevContext->UsbInterface, (BYTE)pipeNum, NULL);
 
-    MWLUsb_DbgPrint (1,
+    MWLUsb_DbgPrint (3,
                      ("Abort pipe, pipehandle %x index %d\n", pipe, pipeNum));
 
     if (pipe == NULL) {
@@ -1065,7 +1065,7 @@ Return Value:
 
     UNREFERENCED_PARAMETER (device);
     UNREFERENCED_PARAMETER (Request);
-    MWLUsb_DbgPrint (1, ("MWLDXP50USBUMDF2Driver: enter Ezusb_ResetPort\n"));
+    MWLUsb_DbgPrint (3, ("MWLDXP50USBUMDF2Driver: enter Ezusb_ResetPort\n"));
     MWLUsb_DbgPrint (
         1, ("MWLDXP50USBUMDF2Driver: Ezusb_ResetPort (%x)\n", status));
 
@@ -1182,7 +1182,7 @@ Ezusb_SetFeature (_In_ WDFDEVICE            device,
 
     UNREFERENCED_PARAMETER (device);
     UNREFERENCED_PARAMETER (setFeatureControl);
-    MWLUsb_DbgPrint (1, ("Enter Ezusb_SetFeature\n"));
+    MWLUsb_DbgPrint (3, ("Enter Ezusb_SetFeature\n"));
 
 #if 0
    urb = ExAllocatePool(NonPagedPool, 
