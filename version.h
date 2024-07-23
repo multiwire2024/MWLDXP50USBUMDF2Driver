@@ -1,0 +1,3 @@
+#define MWLUSB_MAJOR_VERSION             02
+#define MWLUSB_MINOR_VERSION    2024
+#define MWLUSB_BUILD_VERSION    0723
