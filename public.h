@@ -376,9 +376,9 @@ typedef struct _SET_FEATURE_CONTROL
 
 typedef struct _EZUSB_DRIVER_VERSION
 {
-	   WORD     MajorVersion;
-	      WORD     MinorVersion;
-	         WORD     BuildVersion;
+   WORD     MajorVersion;
+   WORD     MinorVersion;
+   WORD     BuildVersion;
 } EZUSB_DRIVER_VERSION, *PEZUSB_DRIVER_VERSION;
 
 #endif

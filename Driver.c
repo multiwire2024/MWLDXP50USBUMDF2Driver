@@ -1,5 +1,12 @@
 /*++
 
+Copyright (c) Multiwire Laboratories Ltd.  All rights reserved.
+
+    THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
+    KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+    PURPOSE.
+
 Module Name:
 
     driver.c
@@ -48,41 +55,40 @@ Return Value:
 
 --*/
 {
-  WDF_DRIVER_CONFIG     config;
-  NTSTATUS              status;
-  WDF_OBJECT_ATTRIBUTES attributes;
+    WDF_DRIVER_CONFIG     config;
+    NTSTATUS              status;
+    WDF_OBJECT_ATTRIBUTES attributes;
 
-  //
-  // Initialize WPP Tracing
-  //
-  WPP_INIT_TRACING (DriverObject, RegistryPath);
+    //
+    // Initialize WPP Tracing
+    //
+    WPP_INIT_TRACING (DriverObject, RegistryPath);
 
-  TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+    TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
-  //
-  // Register a cleanup callback so that we can call WPP_CLEANUP when
-  // the framework driver object is deleted during driver unload.
-  //
-  WDF_OBJECT_ATTRIBUTES_INIT (&attributes);
-  attributes.EvtCleanupCallback
-      = MWLDXP50USBUMDF2DriverEvtDriverContextCleanup;
+    //
+    // Register a cleanup callback so that we can call WPP_CLEANUP when
+    // the framework driver object is deleted during driver unload.
+    //
+    WDF_OBJECT_ATTRIBUTES_INIT (&attributes);
+    attributes.EvtCleanupCallback
+        = MWLDXP50USBUMDF2DriverEvtDriverContextCleanup;
 
-  WDF_DRIVER_CONFIG_INIT (&config, MWLDXP50USBUMDF2DriverEvtDeviceAdd);
+    WDF_DRIVER_CONFIG_INIT (&config, MWLDXP50USBUMDF2DriverEvtDeviceAdd);
 
-  status = WdfDriverCreate (DriverObject, RegistryPath, &attributes, &config,
-                            WDF_NO_HANDLE);
+    status = WdfDriverCreate (DriverObject, RegistryPath, &attributes, &config,
+                              WDF_NO_HANDLE);
 
-  if (!NT_SUCCESS (status))
-    {
-      TraceEvents (TRACE_LEVEL_ERROR, TRACE_DRIVER,
-                   "WdfDriverCreate failed %!STATUS!", status);
-      WPP_CLEANUP (DriverObject);
-      return status;
+    if (!NT_SUCCESS (status)) {
+        TraceEvents (TRACE_LEVEL_ERROR, TRACE_DRIVER,
+                     "WdfDriverCreate failed %!STATUS!", status);
+        WPP_CLEANUP (DriverObject);
+        return status;
     }
 
-  TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
+    TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
 
-  return status;
+    return status;
 }
 
 NTSTATUS
@@ -107,18 +113,18 @@ Return Value:
 
 --*/
 {
-  NTSTATUS status;
+    NTSTATUS status;
 
-  UNREFERENCED_PARAMETER (Driver);
+    UNREFERENCED_PARAMETER (Driver);
 
-  TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+    TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
-  status = MWLDXP50USBUMDF2DriverCreateDevice (DeviceInit);
-  //
+    status = MWLDXP50USBUMDF2DriverCreateDevice (DeviceInit);
+    //
 
-  TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
+    TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
 
-  return status;
+    return status;
 }
 
 VOID
@@ -138,12 +144,12 @@ Return Value:
 
 --*/
 {
-  UNREFERENCED_PARAMETER (DriverObject);
+    UNREFERENCED_PARAMETER (DriverObject);
 
-  TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+    TraceEvents (TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
 
-  //
-  // Stop WPP Tracing
-  //
-  WPP_CLEANUP (WdfDriverWdmGetDriverObject ((WDFDRIVER)DriverObject));
+    //
+    // Stop WPP Tracing
+    //
+    WPP_CLEANUP (WdfDriverWdmGetDriverObject ((WDFDRIVER)DriverObject));
 }

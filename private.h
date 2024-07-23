@@ -1,6 +1,6 @@
 /*++
 
-Copyright (c) Microsoft Corporation.  All rights reserved.
+Copyright (c) Multiwire Laboratories Ltd.  All rights reserved.
 
     THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
     KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -18,7 +18,7 @@ Abstract:
 
 Environment:
 
-    Kernel mode
+    Kernel mode or User Mode
 
 --*/
 
@@ -50,6 +50,7 @@ Environment:
 #include <wdfusb.h>
 #include "public.h"
 
+#include "version.h"
 
 #ifndef _H
 #define _H
@@ -74,10 +75,6 @@ Environment:
 #define FX2_RW_EEPROM       0xA2
 #define FX2_RW_MEMORY       0xA3
 #define FX2_GET_EEPROM_SIZE 0xA5 
-
-#define MWLUSB_MAJOR_VERSION             02
-#define MWLUSB_MINOR_VERSION             01
-#define MWLUSB_BUILD_VERSION             0001
 
 
 #if DBG

@@ -1,5 +1,12 @@
 /*++
 
+Copyright (c) Multiwire Laboratories Ltd.  All rights reserved.
+
+    THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
+    KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+    PURPOSE.
+
 Module Name:
 
     device.h
@@ -304,6 +311,7 @@ GetMaxPacketSize(
 NTSTATUS
 MWLUsb_VendorRequest(
     _In_ WDFDEVICE device,
+    _In_ WDFREQUEST Request,
     _In_ PVENDOR_REQUEST_IN pVendorRequest,
     _In_ size_t inBufLength,
     _In_ PVOID outLength,
