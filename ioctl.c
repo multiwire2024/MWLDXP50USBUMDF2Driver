@@ -199,7 +199,7 @@ Return Value:
         VOID  *inBuffer = NULL;
         size_t inLength = 0;
 
-        MWLUsb_DbgPrint (1, ("Ezusb Reset Pipe\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Reset Pipe\n"));
         status = WdfRequestRetrieveInputBuffer (Request, length, &inBuffer,
                                                 &inLength);
         if (!NT_SUCCESS (status)) {
@@ -222,7 +222,7 @@ Return Value:
         VOID  *inBuffer = NULL;
         size_t inLength = 0;
 
-        MWLUsb_DbgPrint (1, ("Ezusb Abort Pipe\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Abort Pipe\n"));
         status = WdfRequestRetrieveInputBuffer (Request, length, &inBuffer,
                                                 &inLength);
         if (!NT_SUCCESS (status)) {
@@ -318,7 +318,7 @@ Return Value:
         length = (ULONG)((outLength > usbdinfosize)? usbdinfosize : outLength);
         RtlCopyMemory(outBuffer, pusbdinfo, length);
 
-        MWLUsb_DbgPrint (1, ("Ezusb Get Pipe Info\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Get Pipe Info\n"));
     }
     break;
 
@@ -389,7 +389,7 @@ Return Value:
         }
 
         pcontrol = inputBuffer;
-        MWLUsb_DbgPrint (1, ("Ezusb Get String Desc\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Get String Desc\n"));
         cntl.Packet.bm.Request.Dir = 1;
         cntl.Packet.bRequest = USB_REQUEST_GET_DESCRIPTOR; // Get Descriptor
         cntl.Packet.wValue.Bytes.HiByte  = USB_STRING_DESCRIPTOR_TYPE;
@@ -437,7 +437,7 @@ Return Value:
         PUSB_STRING_DESCRIPTOR rtn_desc
             = (PUSB_STRING_DESCRIPTOR)transfer_buffer;
         UNREFERENCED_PARAMETER (rtn_desc);
-        MWLUsb_DbgPrint (1,
+        MWLUsb_DbgPrint (3,
                          ("GET_STRING_DESC: "
                           "WdUsbTargetDeviceSendControlTransferSynchronously "
                           "returns bDescriptorType = %x bLength = %x\n",
@@ -457,7 +457,7 @@ Return Value:
         //           user's buffer
         //
 
-        MWLUsb_DbgPrint (1, ("Ezusb Get Config Desc\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Get Config Desc\n"));
         if (pDevContext->UsbConfigurationDescriptor) {
 
             length = pDevContext->UsbConfigurationDescriptor->wTotalLength;
@@ -480,7 +480,7 @@ Return Value:
     } break;
 
     case IOCTL_EZUSB_SETINTERFACE: {
-        MWLUsb_DbgPrint (1, ("Ezusb Set Interface\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Set Interface\n"));
 #if 0
       PSET_INTERFACE_IN input = ioBuffer;
       Irp->IoStatus.Status = SetInterface(fdo,
@@ -491,7 +491,7 @@ Return Value:
     } break;
 
     case IOCTL_EZUSB_RESET:
-        MWLUsb_DbgPrint (1, ("Ezusb Reset\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Reset\n"));
         status = MWLDXP50USBUMDF2Driver_ResetDevice (device, Request);
         break;
 
@@ -508,7 +508,7 @@ Return Value:
         //
         // Get the pipe associate with this request.
         //
-        MWLUsb_DbgPrint (1, ("Ezusb Bulk Write\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Bulk Write\n"));
         PVOID  inBuffer  = NULL;
         PVOID  outBuffer = NULL;
         size_t outLength = 0;
@@ -532,7 +532,7 @@ Return Value:
             pDevContext->UsbInterface, (BYTE)pipe_num, NULL);
         WDF_USB_PIPE_INFORMATION pipeInfo = { 0 };
 
-        MWLUsb_DbgPrint (1, ("Bulk Write sending %d byte on "
+        MWLUsb_DbgPrint (3, ("Bulk Write sending %d byte on "
                              "pipehandle %x contents: \n",
                              outLength, pipe));
         if (pipe == NULL) {
@@ -545,18 +545,18 @@ Return Value:
 
         for (int i = 0; i < outLength && i <= 9;) {
             if (outLength - i >= 4) {
-                MWLUsb_DbgPrint (1, ("%x %x %x %x ", ((BYTE *)outBuffer)[i],
+                MWLUsb_DbgPrint (3, ("%x %x %x %x ", ((BYTE *)outBuffer)[i],
                                      ((BYTE *)outBuffer)[i + 1],
                                      ((BYTE *)outBuffer)[i + 2],
                                      ((BYTE *)outBuffer)[i + 3]));
                 i += 4;
             } else {
-                MWLUsb_DbgPrint (1, ("%x ", ((BYTE *)outBuffer)[i]));
+                MWLUsb_DbgPrint (3, ("%x ", ((BYTE *)outBuffer)[i]));
                 i++;
             }
         }
 
-        MWLUsb_DbgPrint (1, ("\n"));
+        MWLUsb_DbgPrint (3, ("\n"));
         if ((WdfUsbPipeTypeBulk == pipeInfo.PipeType)
             || (WdfUsbPipeTypeInterrupt == pipeInfo.PipeType)) {
 
@@ -571,7 +571,7 @@ Return Value:
                 break;
             }
             MWLUsb_DbgPrint (
-                1, ("Sent %d bytes, status = %x\n", outLength, status));
+                3, ("Sent %d bytes, status = %x\n", outLength, status));
         } else {
             status = STATUS_INVALID_DEVICE_STATE;
         }
@@ -581,7 +581,7 @@ Return Value:
         //
         // Get the pipe associated with this request.
         //
-        MWLUsb_DbgPrint (1, ("Ezusb Bulk Read\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Bulk Read\n"));
 
         PVOID  inBuffer  = NULL;
         PVOID  outBuffer = NULL;
@@ -609,7 +609,7 @@ Return Value:
         WDF_USB_PIPE_INFORMATION pipeInfo = { 0 };
 
         MWLUsb_DbgPrint (
-            1, ("Bulk read receiving %d byte on pipehandle %x index %d\n",
+            3, ("Bulk read receiving %d byte on pipehandle %x index %d\n",
                 outLength, pipe, pipe_num));
 
         if (pipe == NULL) {
@@ -673,7 +673,7 @@ Return Value:
                     pipe, Request, (PWDF_REQUEST_SEND_OPTIONS)NULL,
                     &buffer_desc, &transfer_length);
                 if (!NT_SUCCESS (status)) {
-                    MWLUsb_DbgPrint (1, (" synchronous read returned "
+                    MWLUsb_DbgPrint (3, (" synchronous read returned "
                                          "status = %x",
                                          status));
                     break;
@@ -682,7 +682,7 @@ Return Value:
                                transfer_length);
                 length += transfer_length;
                 to_go -= transfer_length;
-                MWLUsb_DbgPrint (1, (" synchronous read returned "
+                MWLUsb_DbgPrint (3, (" synchronous read returned "
                                      "transfer_length = %d, "
                                      "length = %d to_go = %d status = %x\n",
                                      transfer_length, length, to_go, status));
@@ -703,14 +703,14 @@ Return Value:
                 }
                 break;
             }
-            MWLUsb_DbgPrint (1, ("Ezusb bulk read received %d "
+            MWLUsb_DbgPrint (3, ("Ezusb bulk read received %d "
                                  "bytes max buffer = %d bytes\n",
                                  length, outLength));
 
             RtlCopyMemory (outBuffer, transfer_buffer,
                            length > outLength ? outLength : length);
 
-            MWLUsb_DbgPrint (1, ("Bulk Read returned %d bytes\n", length));
+            MWLUsb_DbgPrint (3, ("Bulk Read returned %d bytes\n", length));
         } else {
             status = STATUS_INVALID_DEVICE_STATE;
         }
@@ -722,7 +722,7 @@ Return Value:
         size_t outLength = 0;
         size_t inLength  = 0;
 
-        MWLUsb_DbgPrint (1, ("Ezusb Vendor or CLass Request\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Vendor or CLass Request\n"));
 
         status = WdfRequestRetrieveInputBuffer (Request, length, &inBuffer,
                                                 &inLength);
@@ -753,14 +753,14 @@ Return Value:
 	// Since we do all of our requests synchronously, 
 	// the status returned from the operation is valid, so
 	// this wouldn't provide any info the NTSTATUS doesn't already
-        MWLUsb_DbgPrint (1, ("Ezusb Get Last Error\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb Get Last Error\n"));
 	status = STATUS_NOT_IMPLEMENTED;
 	length = 0;
         break;
 
     case IOCTL_EZUSB_ISO_READ:
     case IOCTL_EZUSB_ISO_WRITE:
-        MWLUsb_DbgPrint (1, ("Ezusb ISO Read/Write\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb ISO Read/Write\n"));
 
 	// The DXP50 does not do Isoch or extra streams, so we don't implement this
 
@@ -769,21 +769,21 @@ Return Value:
         break;
 
     case IOCTL_EZUSB_START_ISO_STREAM:
-        MWLUsb_DbgPrint (1, ("Ezusb ISO Start Stream\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb ISO Start Stream\n"));
 	// The DXP50 does not do Isoch or extra streams, so we don't implement this
         length = 0;
         status = STATUS_NOT_IMPLEMENTED;
         break;
 
     case IOCTL_EZUSB_STOP_ISO_STREAM:
-        MWLUsb_DbgPrint (1, ("Ezusb ISO Stop Stream\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb ISO Stop Stream\n"));
 	// The DXP50 does not do Isoch or extra streams, so we don't implement this
         length = 0;
         status = STATUS_NOT_IMPLEMENTED;
         break;
 
     case IOCTL_EZUSB_READ_ISO_BUFFER: {
-        MWLUsb_DbgPrint (1, ("Ezusb ISO Read Buffer -- not supported\n"));
+        MWLUsb_DbgPrint (3, ("Ezusb ISO Read Buffer -- not supported\n"));
 	// The DXP50 does not do Isoch or extra streams, so we don't implement this
         status = STATUS_NOT_IMPLEMENTED;
         length = 0;
