@@ -5,8 +5,8 @@ The Multiwiare Labs USB Driver (mwldxp50usbumdf2driver) is a 64 bit driver suita
 Windows User Mode Driver Framework in order to provide the maximum resilience. It is built to be compatible with selected Cypress EzUSB driver Device IO Controls
 which has been used previously on 32 bit systems.  
 
-The new driver is required to provide hardware access on 64 bit systems, since windows 32 bit has 
-ceased support and Windows 10 itself will be EOL Oct 2025. 
+The new driver is required to provide hardware access on 64 bit systems. Windows 10 32 bit has 
+ceased support and Windows 10 64 bit itself will be EOL Oct 2025, requirng a driver that will work on Windows 11 and later.
 
 64 bit drivers are required to be signed by a suitable certificate, no exceptions. With test signing enabled, it is possible to use a self signed certificate provided by Microsoft in the Windows Driver Kit so long as that certificate 
 has been added to the Trusted Root Certification Authorities store via certmgr. Kernel mode drivers are required to be signed by Microsoft after Windows Hardware Qualification Lab qualification, using a signing certificate which must be acquired from one of four trusted vendors.  Multiwire has acquired an extended verification signing certificate from SSL.com. 
