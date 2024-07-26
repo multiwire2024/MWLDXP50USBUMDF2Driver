@@ -168,8 +168,7 @@ This will bring up a dialog box from the SSL.com CKA for each invokation of sign
 
 ![CKA Dialog](./img/esigner-dialog.png?raw=true )
 
-Provide the SSL.com web site user and password. An additional one time password will be requested. Go to the SSL.com
-page, to the "show QR code" area. This will provide a one time password as an 8 digit code.
+Provide the SSL.com web site user and password. An additional one time password will be requested. The one time password is provided by an authentication app (for example google authenticator) which has been paired with the account. Enter the 6 digit code from the authenticator into the OTP field.
 
 ![CKA Dialog](./img/ssl-otp-page.png?raw=true )
 
